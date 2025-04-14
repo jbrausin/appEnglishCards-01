@@ -1,11 +1,208 @@
 ---
-import Welcome from '../components/Welcome.astro';
+// src/pages/index.astro
 import Layout from '../layouts/Layout.astro';
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+// Definir interfaces de TypeScript en el lado del servidor
+interface StudyGroup {
+  id: string;
+  name: string;
+}
+
+interface StudyCard {
+  id: string;
+  english: string;
+  translation: string;
+  learned: boolean;
+}
 ---
 
-<Layout>
-	<Welcome />
+<Layout title="LinguaLeap - Grupos de Estudio">
+	<header class="flex justify-between items-center mb-8">
+		<div>
+			<h1 class="text-2xl font-bold text-gray-800">Grupos de Estudio</h1>
+			<p class="text-gray-600">Organiza tus frases por categorías</p>
+		</div>
+		
+		<button 
+			id="create-group-btn" 
+			class="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center shadow-md hover:bg-purple-700 transition-colors"
+			aria-label="Crear nuevo grupo"
+		>
+			<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+			</svg>
+		</button>
+	</header>
+	
+	<div id="groups-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+		<!-- Los grupos se cargarán desde localStorage con JavaScript -->
+		<p id="no-groups-message" class="text-gray-500 italic col-span-full py-8 text-center">
+			No hay grupos de estudio todavía. Crea tu primer grupo con el botón "+" en la esquina superior derecha.
+		</p>
+	</div>
 </Layout>
+
+<script>
+	// Función para escapar HTML y prevenir XSS
+	function escapeHtml(unsafe: string): string {
+		return unsafe
+			.replace(/&/g, "&amp;")
+			.replace(/</g, "&lt;")
+			.replace(/>/g, "&gt;")
+			.replace(/"/g, "&quot;")
+			.replace(/'/g, "&#039;");
+	}
+
+	// Cargar grupos desde localStorage
+	document.addEventListener('DOMContentLoaded', () => {
+		const groupsContainer = document.getElementById('groups-container');
+		const noGroupsMessage = document.getElementById('no-groups-message');
+		const groupsJson = localStorage.getItem('studyGroups') || '[]';
+		const groups = JSON.parse(groupsJson) as StudyGroup[];
+		
+		// Botón de crear grupo
+		const createGroupBtn = document.getElementById('create-group-btn');
+		createGroupBtn?.addEventListener('click', () => {
+			// @ts-ignore - Ignoramos el error ya que sabemos que la función existe
+			window.openCreateGroupModal();
+		});
+		
+		if (groups.length > 0 && groupsContainer && noGroupsMessage) {
+			noGroupsMessage.remove();
+			
+			groups.forEach((group: StudyGroup) => {
+				// Obtener tarjetas del grupo
+				const cardsJson = localStorage.getItem(`cards_${group.id}`) || '[]';
+				const cards = JSON.parse(cardsJson) as StudyCard[];
+				const totalCards = cards.length;
+				const learnedCards = cards.filter(card => card.learned).length;
+				const progressPercentage = totalCards > 0 ? (learnedCards / totalCards) * 100 : 0;
+				
+				const groupElement = document.createElement('div');
+				groupElement.className = 'bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-100';
+				
+				groupElement.innerHTML = `
+					<div class="p-5">
+						<div class="flex justify-between items-start mb-3">
+							<h3 class="text-lg font-semibold text-gray-800">${escapeHtml(group.name)}</h3>
+							<div class="dropdown relative">
+								<button class="text-gray-500 hover:text-gray-700 focus:outline-none" aria-label="Opciones">
+									<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+										<path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+									</svg>
+								</button>
+								<div class="dropdown-menu hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 py-1">
+									<button 
+										data-action="edit"
+										data-group-id="${group.id}" 
+										data-group-name="${escapeHtml(group.name)}"
+										class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+									>
+										Editar grupo
+									</button>
+									<button 
+										data-action="add-card"
+										data-group-id="${group.id}" 
+										class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+									>
+										Añadir tarjetas
+									</button>
+									<button 
+										data-action="delete"
+										data-group-id="${group.id}" 
+										class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+									>
+										Eliminar grupo
+									</button>
+								</div>
+							</div>
+						</div>
+						
+						<p class="text-gray-500 text-sm mb-3">${totalCards} tarjeta${totalCards !== 1 ? 's' : ''}</p>
+						
+						<div class="mb-4">
+							<div class="flex justify-between text-xs mb-1">
+								<span class="text-gray-500">Progreso</span>
+								<span class="text-gray-700">${learnedCards}/${totalCards}</span>
+							</div>
+							<div class="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+								<div class="bg-green-300 h-full rounded-full" style="width: ${progressPercentage}%"></div>
+							</div>
+						</div>
+						
+						<div class="flex space-x-2 mt-4">
+							<a 
+								href="/study/${group.id}"
+								class="flex-1 bg-purple-600 hover:bg-purple-700 text-white text-center py-2 px-4 rounded-md transition-colors text-sm font-medium"
+							>
+								Estudiar
+							</a>
+							<button 
+								data-action="add-card"
+								data-group-id="${group.id}" 
+								class="bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-3 rounded-md transition-colors text-sm"
+							>
+								<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+									<path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+								</svg>
+							</button>
+						</div>
+					</div>
+				`;
+				
+				groupsContainer.appendChild(groupElement);
+				
+				// Configurar eventos para el menú desplegable
+				const dropdownButton = groupElement.querySelector('.dropdown button');
+				const dropdownMenu = groupElement.querySelector('.dropdown-menu');
+				
+				dropdownButton?.addEventListener('click', (e: Event) => {
+					e.stopPropagation();
+					dropdownMenu?.classList.toggle('hidden');
+				});
+				
+				// Cerrar el menú al hacer clic en cualquier otro lugar
+				document.addEventListener('click', () => {
+					dropdownMenu?.classList.add('hidden');
+				});
+				
+				// Configurar acciones para los botones del grupo
+				const actionButtons = groupElement.querySelectorAll('[data-action]');
+				actionButtons.forEach((button) => {
+					button.addEventListener('click', (e: Event) => {
+						e.stopPropagation();
+						const target = e.currentTarget as HTMLElement;
+						const action = target.getAttribute('data-action');
+						const groupId = target.getAttribute('data-group-id');
+						
+						if (!groupId) return;
+						
+						if (action === 'edit') {
+							const groupName = target.getAttribute('data-group-name') || '';
+							// @ts-ignore - Ignoramos el error ya que sabemos que la función existe
+							window.openEditGroupModal(groupId, groupName);
+						} else if (action === 'add-card') {
+							// @ts-ignore - Ignoramos el error ya que sabemos que la función existe
+							window.openAddCardModal(groupId);
+						} else if (action === 'delete') {
+							// @ts-ignore - Ignoramos el error ya que sabemos que la función existe
+							window.openDeleteGroupModal(groupId);
+						}
+						
+						// Cerrar el menú después de la acción
+						if (dropdownMenu) {
+							dropdownMenu.classList.add('hidden');
+						}
+					});
+				});
+			});
+		}
+	});
+</script>
+
+<style>
+  /* Estilos para el menú desplegable */
+  .dropdown:hover .dropdown-menu {
+    display: block;
+  }
+</style>

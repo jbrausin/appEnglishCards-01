@@ -1,22 +1,647 @@
-<!doctype html>
-<html lang="en">
+---
+// src/layouts/Layout.astro
+import Sidebar from '../components/Sidebar.astro';
+
+export interface Props {
+	title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="es">
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="generator" content={Astro.generator} />
-		<title>Astro Basics</title>
+		<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+		<title>{title}</title>
 	</head>
 	<body>
-		<slot />
+		<div class="min-h-screen bg-gray-100">
+			<div class="container mx-auto p-6">
+				<div class="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
+					<div class="grid grid-cols-12">
+						<!-- Sidebar -->
+						<div class="col-span-12 md:col-span-3 lg:col-span-2 bg-gray-900 text-white">
+							<Sidebar />
+						</div>
+						
+						<!-- Main Content -->
+						<div class="col-span-12 md:col-span-9 lg:col-span-10 p-6 bg-gray-50">
+							<slot />
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Modal para crear grupo -->
+		<div id="create-group-modal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center hidden z-50">
+			<div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
+				<h3 class="text-xl font-bold mb-4">Crear nuevo grupo</h3>
+				<form id="create-group-form">
+					<div class="mb-6">
+						<label for="group-name" class="block text-sm font-medium text-gray-700 mb-2">Nombre del grupo</label>
+						<input
+							type="text"
+							id="group-name"
+							name="group-name"
+							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+							placeholder="Ej: Frases básicas, Vocabulario de viaje..."
+							required
+						/>
+					</div>
+					
+					<div class="flex justify-end space-x-3">
+						<button type="button" id="cancel-create-group" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors">
+							Cancelar
+						</button>
+						<button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors">
+							Guardar
+						</button>
+					</div>
+				</form>
+			</div>
+		</div>
+
+		<!-- Modal para editar grupo -->
+		<div id="edit-group-modal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center hidden z-50">
+			<div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
+				<h3 class="text-xl font-bold mb-4">Editar grupo</h3>
+				<form id="edit-group-form">
+					<div class="mb-6">
+						<label for="edit-group-name" class="block text-sm font-medium text-gray-700 mb-2">Nombre del grupo</label>
+						<input
+							type="text"
+							id="edit-group-name"
+							name="edit-group-name"
+							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+							required
+						/>
+					</div>
+					
+					<div class="flex justify-end space-x-3">
+						<button type="button" id="cancel-edit-group" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors">
+							Cancelar
+						</button>
+						<button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors">
+							Guardar
+						</button>
+					</div>
+				</form>
+			</div>
+		</div>
+
+		<!-- Modal para añadir tarjeta -->
+		<div id="add-card-modal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center hidden z-50">
+			<div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
+				<h3 class="text-xl font-bold mb-4">Añadir nueva tarjeta</h3>
+				<form id="add-card-form">
+					<div class="mb-4">
+						<label for="card-english" class="block text-sm font-medium text-gray-700 mb-2">Frase en inglés</label>
+						<input
+							type="text"
+							id="card-english"
+							name="card-english"
+							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+							placeholder="Escribe la frase en inglés"
+							required
+						/>
+					</div>
+					
+					<div class="mb-6">
+						<label for="card-translation" class="block text-sm font-medium text-gray-700 mb-2">Traducción</label>
+						<input
+							type="text"
+							id="card-translation"
+							name="card-translation"
+							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+							placeholder="Escribe la traducción en español"
+							required
+						/>
+					</div>
+					
+					<div class="flex justify-end space-x-3">
+						<button type="button" id="cancel-add-card" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors">
+							Cancelar
+						</button>
+						<button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors">
+							Guardar
+						</button>
+					</div>
+				</form>
+			</div>
+		</div>
+
+		<!-- Modal de confirmación para eliminar grupo -->
+		<div id="delete-group-modal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center hidden z-50">
+			<div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
+				<h3 class="text-xl font-bold mb-4">Confirmar eliminación</h3>
+				<p class="mb-6">¿Estás seguro de que deseas eliminar este grupo? Se eliminarán todas las tarjetas asociadas. Esta acción no se puede deshacer.</p>
+				<div class="flex justify-end space-x-3">
+					<button id="cancel-delete-group" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors">
+						Cancelar
+					</button>
+					<button id="confirm-delete-group" class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors">
+						Eliminar
+					</button>
+				</div>
+			</div>
+		</div>
+
+		<!-- Modal para editar tarjeta -->
+		<div id="edit-card-modal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center hidden z-50">
+			<div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
+				<h3 class="text-xl font-bold mb-4">Editar tarjeta</h3>
+				<form id="edit-card-form">
+					<input type="hidden" id="edit-card-id" name="edit-card-id">
+					<input type="hidden" id="edit-card-group-id" name="edit-card-group-id">
+					<div class="mb-4">
+						<label for="edit-card-english" class="block text-sm font-medium text-gray-700 mb-2">Frase en inglés</label>
+						<input
+							type="text"
+							id="edit-card-english"
+							name="edit-card-english"
+							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+							required
+						/>
+					</div>
+					
+					<div class="mb-6">
+						<label for="edit-card-translation" class="block text-sm font-medium text-gray-700 mb-2">Traducción</label>
+						<input
+							type="text"
+							id="edit-card-translation"
+							name="edit-card-translation"
+							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+							required
+						/>
+					</div>
+					
+					<div class="flex justify-end space-x-3">
+						<button type="button" id="cancel-edit-card" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors">
+							Cancelar
+						</button>
+						<button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors">
+							Guardar
+						</button>
+					</div>
+				</form>
+			</div>
+		</div>
+
+		<!-- Modal de confirmación para eliminar tarjeta -->
+		<div id="delete-card-modal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center hidden z-50">
+			<div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
+				<h3 class="text-xl font-bold mb-4">Confirmar eliminación</h3>
+				<p class="mb-6">¿Estás seguro de que deseas eliminar esta tarjeta? Esta acción no se puede deshacer.</p>
+				<input type="hidden" id="delete-card-id" name="delete-card-id">
+				<input type="hidden" id="delete-card-group-id" name="delete-card-group-id">
+				<div class="flex justify-end space-x-3">
+					<button id="cancel-delete-card" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors">
+						Cancelar
+					</button>
+					<button id="confirm-delete-card" class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors">
+						Eliminar
+					</button>
+				</div>
+			</div>
+		</div>
+
+		<!-- Toast notifications -->
+		<div id="toast-container" class="fixed bottom-4 right-4 z-50"></div>
 	</body>
 </html>
 
-<style>
-	html,
-	body {
-		margin: 0;
-		width: 100%;
-		height: 100%;
+<style is:global>
+	:root {
+		--accent: 124, 58, 237;
+		--accent-gradient: linear-gradient(45deg, rgb(var(--accent)), #da62c4 30%, white 60%);
+	}
+	html {
+		font-family: 'Poppins', system-ui, sans-serif;
+		background-color: #f8f8f6;
+	}
+	code {
+		font-family: Menlo, Monaco, Lucida Console, Liberation Mono, DejaVu Sans Mono,
+			Bitstream Vera Sans Mono, Courier New, monospace;
+	}
+	.container {
+		max-width: 1280px;
 	}
 </style>
+
+<script>
+	// Definir tipos para funciones globales
+	declare global {
+		interface Window {
+			openCreateGroupModal: typeof openCreateGroupModal;
+			openEditGroupModal: typeof openEditGroupModal;
+			openAddCardModal: typeof openAddCardModal;
+			openDeleteGroupModal: typeof openDeleteGroupModal;
+			openEditCardModal: typeof openEditCardModal;
+			openDeleteCardModal: typeof openDeleteCardModal;
+		}
+	}
+
+	// Definir interfaces para TypeScript
+	interface StudyGroup {
+		id: string;
+		name: string;
+	}
+
+	interface StudyCard {
+		id: string;
+		english: string;
+		translation: string;
+		learned: boolean;
+	}
+	
+	// Variables para modales
+	let currentGroupId: string | null = null;
+	
+	// Toast notification function
+	function showToast(message: string, type = 'success', duration = 3000) {
+		const toastContainer = document.getElementById('toast-container');
+		if (!toastContainer) return;
+		
+		const toast = document.createElement('div');
+		toast.className = `p-4 mb-3 rounded-lg shadow-lg transition-opacity duration-300 ${
+			type === 'success' ? 'bg-green-500' : 'bg-red-500'
+		} text-white`;
+		toast.textContent = message;
+		
+		toastContainer.appendChild(toast);
+		
+		// Eliminar el toast después de la duración especificada
+		setTimeout(() => {
+			toast.classList.add('opacity-0');
+			setTimeout(() => {
+				toast.remove();
+			}, 300);
+		}, duration);
+	}
+	
+	// Funciones para los modales
+	function openCreateGroupModal() {
+		const modal = document.getElementById('create-group-modal');
+		if (modal) {
+			modal.classList.remove('hidden');
+			const input = document.getElementById('group-name');
+			if (input && input instanceof HTMLInputElement) input.focus();
+		}
+	}
+	
+	function closeCreateGroupModal() {
+		const modal = document.getElementById('create-group-modal');
+		if (modal) {
+			modal.classList.add('hidden');
+			const form = document.getElementById('create-group-form');
+			if (form && form instanceof HTMLFormElement) form.reset();
+		}
+	}
+	
+	function openEditGroupModal(groupId: string, groupName: string) {
+		const modal = document.getElementById('edit-group-modal');
+		const input = document.getElementById('edit-group-name');
+		
+		if (modal && input && input instanceof HTMLInputElement) {
+			currentGroupId = groupId;
+			input.value = groupName;
+			modal.classList.remove('hidden');
+			input.focus();
+		}
+	}
+	
+	function closeEditGroupModal() {
+		const modal = document.getElementById('edit-group-modal');
+		if (modal) {
+			modal.classList.add('hidden');
+			currentGroupId = null;
+		}
+	}
+	
+	function openAddCardModal(groupId: string) {
+		const modal = document.getElementById('add-card-modal');
+		if (modal) {
+			currentGroupId = groupId;
+			modal.classList.remove('hidden');
+			const input = document.getElementById('card-english');
+			if (input && input instanceof HTMLInputElement) input.focus();
+		}
+	}
+	
+	function closeAddCardModal() {
+		const modal = document.getElementById('add-card-modal');
+		if (modal) {
+			modal.classList.add('hidden');
+			const form = document.getElementById('add-card-form');
+			if (form && form instanceof HTMLFormElement) form.reset();
+			currentGroupId = null;
+		}
+	}
+	
+	function openDeleteGroupModal(groupId: string) {
+		const modal = document.getElementById('delete-group-modal');
+		if (modal) {
+			currentGroupId = groupId;
+			modal.classList.remove('hidden');
+		}
+	}
+	
+	function closeDeleteGroupModal() {
+		const modal = document.getElementById('delete-group-modal');
+		if (modal) {
+			modal.classList.add('hidden');
+			currentGroupId = null;
+		}
+	}
+	
+	function openEditCardModal(cardId: string, english: string, translation: string, groupId?: string) {
+		const modal = document.getElementById('edit-card-modal');
+		const idInput = document.getElementById('edit-card-id');
+		const groupIdInput = document.getElementById('edit-card-group-id');
+		const englishInput = document.getElementById('edit-card-english');
+		const translationInput = document.getElementById('edit-card-translation');
+		
+		if (modal && idInput && groupIdInput && englishInput && translationInput) {
+			if (idInput instanceof HTMLInputElement) idInput.value = cardId;
+			if (groupIdInput instanceof HTMLInputElement) groupIdInput.value = groupId || (currentGroupId || "");
+			if (englishInput instanceof HTMLInputElement) englishInput.value = english;
+			if (translationInput instanceof HTMLInputElement) translationInput.value = translation;
+			
+			modal.classList.remove('hidden');
+			if (englishInput instanceof HTMLInputElement) englishInput.focus();
+		}
+	}
+	
+	function closeEditCardModal() {
+		const modal = document.getElementById('edit-card-modal');
+		if (modal) {
+			modal.classList.add('hidden');
+		}
+	}
+	
+	function openDeleteCardModal(cardId: string, groupId?: string) {
+		const modal = document.getElementById('delete-card-modal');
+		const idInput = document.getElementById('delete-card-id');
+		const groupIdInput = document.getElementById('delete-card-group-id');
+		
+		if (modal && idInput && groupIdInput) {
+			if (idInput instanceof HTMLInputElement) idInput.value = cardId;
+			if (groupIdInput instanceof HTMLInputElement) groupIdInput.value = groupId || (currentGroupId || "");
+			modal.classList.remove('hidden');
+		}
+	}
+	
+	function closeDeleteCardModal() {
+		const modal = document.getElementById('delete-card-modal');
+		if (modal) {
+			modal.classList.add('hidden');
+		}
+	}
+	
+	// Configurar event listeners al cargar el DOM
+	document.addEventListener('DOMContentLoaded', () => {
+		// Event listeners para modales de grupos
+		document.getElementById('cancel-create-group')?.addEventListener('click', closeCreateGroupModal);
+		document.getElementById('cancel-edit-group')?.addEventListener('click', closeEditGroupModal);
+		document.getElementById('cancel-add-card')?.addEventListener('click', closeAddCardModal);
+		document.getElementById('cancel-delete-group')?.addEventListener('click', closeDeleteGroupModal);
+		
+		// Event listeners para modales de tarjetas
+		document.getElementById('cancel-edit-card')?.addEventListener('click', closeEditCardModal);
+		document.getElementById('cancel-delete-card')?.addEventListener('click', closeDeleteCardModal);
+		
+		// Formulario para crear grupo
+		const createGroupForm = document.getElementById('create-group-form');
+		createGroupForm?.addEventListener('submit', (e) => {
+			e.preventDefault();
+			const nameInput = document.getElementById('group-name');
+			
+			if (!nameInput || !(nameInput instanceof HTMLInputElement)) return;
+			
+			const groupName = nameInput.value.trim();
+			
+			if (groupName) {
+				// Obtener grupos existentes
+				const groupsJson = localStorage.getItem('studyGroups') || '[]';
+				const groups = JSON.parse(groupsJson);
+				
+				// Crear nuevo grupo
+				const newGroup = {
+					id: Date.now().toString(),
+					name: groupName
+				};
+				
+				// Guardar en localStorage
+				groups.push(newGroup);
+				localStorage.setItem('studyGroups', JSON.stringify(groups));
+				
+				// Inicializar array de tarjetas vacío para este grupo
+				localStorage.setItem(`cards_${newGroup.id}`, JSON.stringify([]));
+				
+				// Cerrar modal y mostrar notificación
+				closeCreateGroupModal();
+				showToast('¡Grupo creado con éxito!');
+				
+				// Recargar la página para mostrar el nuevo grupo
+				window.location.reload();
+			}
+		});
+		
+		// Formulario para editar grupo
+		const editGroupForm = document.getElementById('edit-group-form');
+		editGroupForm?.addEventListener('submit', (e) => {
+			e.preventDefault();
+			const nameInput = document.getElementById('edit-group-name');
+			
+			if (!nameInput || !(nameInput instanceof HTMLInputElement)) return;
+			
+			const groupName = nameInput.value.trim();
+			
+			if (groupName && currentGroupId) {
+				// Obtener grupos existentes
+				const groupsJson = localStorage.getItem('studyGroups') || '[]';
+				const groups = JSON.parse(groupsJson);
+				
+				// Actualizar el nombre del grupo
+				const updatedGroups = groups.map((group: StudyGroup) => {
+					if (group.id === currentGroupId) {
+						return { ...group, name: groupName };
+					}
+					return group;
+				});
+				
+				// Guardar en localStorage
+				localStorage.setItem('studyGroups', JSON.stringify(updatedGroups));
+				
+				// Cerrar modal y mostrar notificación
+				closeEditGroupModal();
+				showToast('¡Grupo actualizado con éxito!');
+				
+				// Recargar la página para mostrar los cambios
+				window.location.reload();
+			}
+		});
+		
+		// Formulario para añadir tarjeta
+		const addCardForm = document.getElementById('add-card-form');
+		addCardForm?.addEventListener('submit', (e) => {
+			e.preventDefault();
+			const englishInput = document.getElementById('card-english');
+			const translationInput = document.getElementById('card-translation');
+			
+			if (!englishInput || !(englishInput instanceof HTMLInputElement) || 
+				!translationInput || !(translationInput instanceof HTMLInputElement)) return;
+			
+			const english = englishInput.value.trim();
+			const translation = translationInput.value.trim();
+			
+			if (english && translation && currentGroupId) {
+				// Obtener tarjetas existentes del grupo
+				const cardsJson = localStorage.getItem(`cards_${currentGroupId}`) || '[]';
+				const cards = JSON.parse(cardsJson);
+				
+				// Crear nueva tarjeta
+				const newCard = {
+					id: Date.now().toString(),
+					english,
+					translation,
+					learned: false
+				};
+				
+				// Guardar en localStorage
+				cards.push(newCard);
+				localStorage.setItem(`cards_${currentGroupId}`, JSON.stringify(cards));
+				
+				// Cerrar modal y mostrar notificación
+				closeAddCardModal();
+				showToast('¡Tarjeta añadida con éxito!');
+				
+				// Recargar la página si estamos en la vista de estudio
+				if (window.location.pathname.includes('/study/')) {
+					window.location.reload();
+				}
+			}
+		});
+		
+		// Formulario para editar tarjeta
+		const editCardForm = document.getElementById('edit-card-form');
+		editCardForm?.addEventListener('submit', (e) => {
+			e.preventDefault();
+			const idInput = document.getElementById('edit-card-id');
+			const groupIdInput = document.getElementById('edit-card-group-id');
+			const englishInput = document.getElementById('edit-card-english');
+			const translationInput = document.getElementById('edit-card-translation');
+			
+			if (!idInput || !(idInput instanceof HTMLInputElement) || 
+				!groupIdInput || !(groupIdInput instanceof HTMLInputElement) || 
+				!englishInput || !(englishInput instanceof HTMLInputElement) || 
+				!translationInput || !(translationInput instanceof HTMLInputElement)) return;
+			
+			const cardId = idInput.value;
+			const groupId = groupIdInput.value;
+			const english = englishInput.value.trim();
+			const translation = translationInput.value.trim();
+			
+			if (cardId && groupId && english && translation) {
+				// Obtener tarjetas existentes del grupo
+				const cardsJson = localStorage.getItem(`cards_${groupId}`) || '[]';
+				const cards = JSON.parse(cardsJson);
+				
+				// Actualizar la tarjeta
+				const updatedCards = cards.map((card: StudyCard) => {
+					if (card.id === cardId) {
+						return { ...card, english, translation };
+					}
+					return card;
+				});
+				
+				// Guardar en localStorage
+				localStorage.setItem(`cards_${groupId}`, JSON.stringify(updatedCards));
+				
+				// Cerrar modal y mostrar notificación
+				closeEditCardModal();
+				showToast('¡Tarjeta actualizada con éxito!');
+				
+				// Recargar la página
+				window.location.reload();
+			}
+		});
+		
+		// Confirmar eliminación de grupo
+		document.getElementById('confirm-delete-group')?.addEventListener('click', () => {
+			if (currentGroupId) {
+				// Obtener grupos existentes
+				const groupsJson = localStorage.getItem('studyGroups') || '[]';
+				const groups = JSON.parse(groupsJson);
+				
+				// Filtrar el grupo a eliminar
+				const updatedGroups = groups.filter((group: StudyGroup) => group.id !== currentGroupId);
+				
+				// Guardar grupos actualizados
+				localStorage.setItem('studyGroups', JSON.stringify(updatedGroups));
+				
+				// Eliminar las tarjetas asociadas al grupo
+				localStorage.removeItem(`cards_${currentGroupId}`);
+				
+				// Cerrar modal y mostrar notificación
+				closeDeleteGroupModal();
+				showToast('Grupo eliminado correctamente');
+				
+				// Redirigir a la página principal si estamos en la vista de estudio
+				if (window.location.pathname.includes('/study/')) {
+					window.location.href = '/';
+				} else {
+					// Recargar la página para actualizar la lista de grupos
+					window.location.reload();
+				}
+			}
+		});
+		
+		// Confirmar eliminación de tarjeta
+		document.getElementById('confirm-delete-card')?.addEventListener('click', () => {
+			const idInput = document.getElementById('delete-card-id');
+			const groupIdInput = document.getElementById('delete-card-group-id');
+			
+			if (!idInput || !(idInput instanceof HTMLInputElement) || 
+				!groupIdInput || !(groupIdInput instanceof HTMLInputElement)) return;
+			
+			const cardId = idInput.value;
+			const groupId = groupIdInput.value;
+			
+			if (cardId && groupId) {
+				// Obtener tarjetas existentes del grupo
+				const cardsJson = localStorage.getItem(`cards_${groupId}`) || '[]';
+				const cards = JSON.parse(cardsJson);
+				
+				// Filtrar la tarjeta a eliminar
+				const updatedCards = cards.filter((card: StudyCard) => card.id !== cardId);
+				
+				// Guardar en localStorage
+				localStorage.setItem(`cards_${groupId}`, JSON.stringify(updatedCards));
+				
+				// Cerrar modal y mostrar notificación
+				closeDeleteCardModal();
+				showToast('Tarjeta eliminada correctamente');
+				
+				// Recargar la página
+				window.location.reload();
+			}
+		});
+	});
+	
+	// Exportar funciones para uso global
+	if (typeof window !== 'undefined') {
+		window.openCreateGroupModal = openCreateGroupModal;
+		window.openEditGroupModal = openEditGroupModal;
+		window.openAddCardModal = openAddCardModal;
+		window.openDeleteGroupModal = openDeleteGroupModal;
+		window.openEditCardModal = openEditCardModal;
+		window.openDeleteCardModal = openDeleteCardModal;
+	}
+</script>

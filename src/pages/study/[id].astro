@@ -1,0 +1,325 @@
+---
+// src/pages/study/[id].astro
+import Layout from '../../layouts/Layout.astro';
+
+// En modo hybrid, podemos utilizar una opción más simple
+export const prerender = false;
+
+const { id } = Astro.params;
+
+// Definir interfaces
+interface StudyGroup {
+  id: string;
+  name: string;
+}
+
+interface StudyCard {
+  id: string;
+  english: string;
+  translation: string;
+  learned: boolean;
+}
+---
+
+<Layout title="LinguaLeap - Estudio">
+	<div class="mb-8 flex justify-between items-center">
+		<div>
+			<a href="/" class="inline-flex items-center text-purple-600 hover:text-purple-700 mb-2">
+				<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+					<path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+				</svg>
+				Volver a grupos
+			</a>
+			<h1 class="text-2xl font-bold text-gray-800" id="group-title">Cargando grupo...</h1>
+			<p class="text-gray-600" id="group-stats">Cargando tarjetas...</p>
+		</div>
+		
+		<button 
+			id="add-card-btn" 
+			class="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center shadow-md hover:bg-purple-700 transition-colors"
+			aria-label="Añadir tarjeta"
+		>
+			<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+			</svg>
+		</button>
+	</div>
+	
+	<div class="mb-6 flex items-center justify-between">
+		<div class="flex space-x-2">
+			<button id="filter-all" class="text-sm px-3 py-1 rounded bg-purple-600 text-white hover:bg-purple-700">
+				Todas
+			</button>
+			<button id="filter-pending" class="text-sm px-3 py-1 rounded bg-gray-200 text-gray-600 hover:bg-gray-300">
+				Pendientes
+			</button>
+			<button id="filter-learned" class="text-sm px-3 py-1 rounded bg-gray-200 text-gray-600 hover:bg-gray-300">
+				Aprendidas
+			</button>
+		</div>
+		<div>
+			<p class="text-sm font-medium text-gray-600">
+				Progreso: <span id="progress-text">0/0</span>
+			</p>
+		</div>
+	</div>
+	
+	<div id="cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+		<p id="no-cards-message" class="text-gray-500 italic col-span-full py-8 text-center">
+			Este grupo no tiene tarjetas todavía. Añade tu primera tarjeta con el botón "+" en la esquina superior derecha.
+		</p>
+	</div>
+</Layout>
+
+<script define:vars={{ groupId: id }}>
+	// Variables para filtrado
+	let currentFilter = 'all';
+	let cards = [];
+
+	// Función para escapar HTML y prevenir XSS
+	function escapeHtml(unsafe) {
+		return unsafe
+			.replace(/&/g, "&amp;")
+			.replace(/</g, "&lt;")
+			.replace(/>/g, "&gt;")
+			.replace(/"/g, "&quot;")
+			.replace(/'/g, "&#039;");
+	}
+
+	// Función para renderizar las tarjetas según el filtro actual
+	function renderCards() {
+		const cardsContainer = document.getElementById('cards-container');
+		const noCardsMessage = document.getElementById('no-cards-message');
+		
+		if (!cardsContainer) return;
+		
+		// Limpiar el contenedor
+		while (cardsContainer.firstChild) {
+			cardsContainer.removeChild(cardsContainer.firstChild);
+		}
+		
+		// Obtener las tarjetas
+		const cardsJson = localStorage.getItem(`cards_${groupId}`) || '[]';
+		const allCards = JSON.parse(cardsJson);
+		
+		// Aplicar filtro
+		let filteredCards;
+		if (currentFilter === 'pending') {
+			filteredCards = allCards.filter(card => !card.learned);
+		} else if (currentFilter === 'learned') {
+			filteredCards = allCards.filter(card => card.learned);
+		} else {
+			filteredCards = allCards;
+		}
+		
+		// Actualizar variable global
+		cards = filteredCards;
+		
+		// Mostrar mensaje si no hay tarjetas
+		if (filteredCards.length === 0) {
+			const message = document.createElement('p');
+			message.className = 'text-gray-500 italic col-span-full py-8 text-center';
+			
+			if (allCards.length === 0) {
+				message.textContent = 'Este grupo no tiene tarjetas todavía. Añade tu primera tarjeta con el botón "+" en la esquina superior derecha.';
+			} else {
+				message.textContent = 'No hay tarjetas que coincidan con el filtro seleccionado.';
+			}
+			
+			cardsContainer.appendChild(message);
+			return;
+		}
+		
+		// Renderizar las tarjetas filtradas
+		filteredCards.forEach(card => {
+			const cardElement = document.createElement('div');
+			cardElement.className = `bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border ${card.learned ? 'border-purple-300' : 'border-gray-200'}`;
+			
+			cardElement.innerHTML = `
+				<div class="p-4">
+					<div class="flex justify-between items-start mb-3">
+						<h3 class="text-lg font-bold text-gray-800">${escapeHtml(card.english)}</h3>
+						<div class="flex space-x-2">
+							<button 
+								data-action="toggle-learned"
+								data-card-id="${card.id}"
+								class="${card.learned ? 'text-purple-600' : 'text-gray-400 hover:text-purple-600'}"
+							>
+								<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="${card.learned ? 'currentColor' : 'none'}" viewBox="0 0 24 24" stroke="currentColor">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+								</svg>
+							</button>
+							<button 
+								data-action="edit-card"
+								data-card-id="${card.id}"
+								data-card-english="${escapeHtml(card.english)}"
+								data-card-translation="${escapeHtml(card.translation)}"
+								class="text-gray-400 hover:text-gray-600"
+							>
+								<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+									<path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+								</svg>
+							</button>
+							<button 
+								data-action="delete-card"
+								data-card-id="${card.id}"
+								class="text-gray-400 hover:text-red-600"
+							>
+								<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+									<path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+								</svg>
+							</button>
+						</div>
+					</div>
+					<p class="text-gray-600">${escapeHtml(card.translation)}</p>
+				</div>
+			`;
+			
+			cardsContainer.appendChild(cardElement);
+			
+			// Configurar evento para marcar como aprendida/pendiente
+			const toggleButton = cardElement.querySelector('[data-action="toggle-learned"]');
+			toggleButton?.addEventListener('click', () => {
+				// Obtener todas las tarjetas
+				const cardsJson = localStorage.getItem(`cards_${groupId}`) || '[]';
+				const allCards = JSON.parse(cardsJson);
+				
+				// Actualizar el estado de la tarjeta
+				const updatedCards = allCards.map(c => {
+					if (c.id === card.id) {
+						return { ...c, learned: !c.learned };
+					}
+					return c;
+				});
+				
+				// Guardar en localStorage
+				localStorage.setItem(`cards_${groupId}`, JSON.stringify(updatedCards));
+				
+				// Actualizar la interfaz
+				updateGroupStats();
+				renderCards();
+			});
+			
+			// Configurar evento para editar tarjeta
+			const editButton = cardElement.querySelector('[data-action="edit-card"]');
+			editButton?.addEventListener('click', () => {
+				const cardId = card.id;
+				const english = card.english;
+				const translation = card.translation;
+				
+				// Comprobar si las funciones para editar existen en el objeto window
+				if (typeof window !== 'undefined' && window.openEditCardModal) {
+					window.openEditCardModal(cardId, english, translation, groupId);
+				}
+			});
+			
+			// Configurar evento para eliminar tarjeta
+			const deleteButton = cardElement.querySelector('[data-action="delete-card"]');
+			deleteButton?.addEventListener('click', () => {
+				const cardId = card.id;
+				
+				// Comprobar si las funciones para eliminar existen en el objeto window
+				if (typeof window !== 'undefined' && window.openDeleteCardModal) {
+					window.openDeleteCardModal(cardId, groupId);
+				}
+			});
+		});
+	}
+
+	// Función para actualizar las estadísticas del grupo
+	function updateGroupStats() {
+		const titleElement = document.getElementById('group-title');
+		const statsElement = document.getElementById('group-stats');
+		const progressElement = document.getElementById('progress-text');
+		
+		// Obtener información del grupo
+		const groupsJson = localStorage.getItem('studyGroups') || '[]';
+		const groups = JSON.parse(groupsJson);
+		const currentGroup = groups.find(group => group.id === groupId);
+		
+		// Obtener tarjetas y estadísticas
+		const cardsJson = localStorage.getItem(`cards_${groupId}`) || '[]';
+		const cards = JSON.parse(cardsJson);
+		const totalCards = cards.length;
+		const learnedCards = cards.filter(card => card.learned).length;
+		
+		// Actualizar elementos en la interfaz
+		if (titleElement && currentGroup) {
+			titleElement.textContent = currentGroup.name;
+		}
+		
+		if (statsElement) {
+			statsElement.textContent = `${totalCards} tarjeta${totalCards !== 1 ? 's' : ''}`;
+		}
+		
+		if (progressElement) {
+			progressElement.textContent = `${learnedCards}/${totalCards}`;
+		}
+	}
+
+	// Al cargar la página
+	document.addEventListener('DOMContentLoaded', () => {
+		// Verificar si el grupo existe
+		const groupsJson = localStorage.getItem('studyGroups') || '[]';
+		const groups = JSON.parse(groupsJson);
+		const currentGroup = groups.find(group => group.id === groupId);
+		
+		if (!currentGroup) {
+			// Redirigir a la página principal si el grupo no existe
+			window.location.href = '/';
+			return;
+		}
+		
+		// Actualizar estadísticas y renderizar tarjetas
+		updateGroupStats();
+		renderCards();
+		
+		// Botón para añadir tarjeta
+		const addCardBtn = document.getElementById('add-card-btn');
+		addCardBtn?.addEventListener('click', () => {
+			// Comprobar si la función para añadir tarjetas existe en el objeto window
+			if (typeof window !== 'undefined' && window.openAddCardModal) {
+				window.openAddCardModal(groupId);
+			}
+		});
+		
+		// Botones de filtro
+		const filterAllBtn = document.getElementById('filter-all');
+		const filterPendingBtn = document.getElementById('filter-pending');
+		const filterLearnedBtn = document.getElementById('filter-learned');
+		
+		filterAllBtn?.addEventListener('click', () => {
+			currentFilter = 'all';
+			updateFilterButtons();
+			renderCards();
+		});
+		
+		filterPendingBtn?.addEventListener('click', () => {
+			currentFilter = 'pending';
+			updateFilterButtons();
+			renderCards();
+		});
+		
+		filterLearnedBtn?.addEventListener('click', () => {
+			currentFilter = 'learned';
+			updateFilterButtons();
+			renderCards();
+		});
+		
+		// Función para actualizar los estilos de los botones de filtro
+		function updateFilterButtons() {
+			filterAllBtn?.classList.remove('bg-purple-600', 'text-white', 'bg-gray-200', 'text-gray-600');
+			filterPendingBtn?.classList.remove('bg-purple-600', 'text-white', 'bg-gray-200', 'text-gray-600');
+			filterLearnedBtn?.classList.remove('bg-purple-600', 'text-white', 'bg-gray-200', 'text-gray-600');
+			
+			filterAllBtn?.classList.add(currentFilter === 'all' ? 'bg-purple-600' : 'bg-gray-200');
+			filterAllBtn?.classList.add(currentFilter === 'all' ? 'text-white' : 'text-gray-600');
+			
+			filterPendingBtn?.classList.add(currentFilter === 'pending' ? 'bg-purple-600' : 'bg-gray-200');
+			filterPendingBtn?.classList.add(currentFilter === 'pending' ? 'text-white' : 'text-gray-600');
+			
+			filterLearnedBtn?.classList.add(currentFilter === 'learned' ? 'bg-purple-600' : 'bg-gray-200');
+			filterLearnedBtn?.classList.add(currentFilter === 'learned' ? 'text-white' : 'text-gray-600');
+		}
+	});
+</script>

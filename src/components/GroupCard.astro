@@ -1,0 +1,15 @@
+---
+// src/components/GroupCard.astro
+---
+
+<div class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-100">
+    <slot />
+</div>
+
+<style>
+    /* Estilos adicionales para las tarjetas de grupo */
+    div:hover {
+        transform: translateY(-2px);
+        transition: transform 0.2s ease-in-out;
+    }
+</style>
