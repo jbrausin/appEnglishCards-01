@@ -1,35 +1,32 @@
 ---
 // src/pages/index.astro
 import Layout from '../layouts/Layout.astro';
-import { getLanguages, 
-         getStatistics, 
-         getGroupsByLanguage,
-         getCardsByGroup, 
-         type Language, 
-         type StudyGroup, 
-         type StudyCard } from '../lib/supabase';
+import { getLanguages } from '../services/languageService';
+import { getGroups } from '../services/groupService';
+import { getCards } from '../services/cardService';
 
-// Cargar datos desde Supabase en el servidor
+// Obtener datos desde Supabase
 const languages = await getLanguages();
-const stats = await getStatistics();
 
-// Calcular información adicional para cada idioma
+// Para cada idioma, necesitamos calcular las estadísticas
 for (const language of languages) {
-  const groups = await getGroupsByLanguage(language.id);
-  language.groups = groups;
+  // Obtener grupos del idioma
+  const groups = await getGroups(language.id);
   
+  // Calcular estadísticas
   let totalCards = 0;
   let learnedCards = 0;
   
   for (const group of groups) {
-    const cards = await getCardsByGroup(group.id);
+    const cards = await getCards(group.id);
     totalCards += cards.length;
     learnedCards += cards.filter(card => card.learned).length;
   }
   
-  language.totalCards = totalCards;
-  language.learnedCards = learnedCards;
-  language.progressPercentage = totalCards > 0 ? (learnedCards / totalCards * 100) : 0;
+  // Agregar la información a language
+  language['_groups'] = groups.length;
+  language['_totalCards'] = totalCards;
+  language['_learnedCards'] = learnedCards;
 }
 ---
 
@@ -57,110 +54,99 @@ for (const language of languages) {
 				No hay idiomas todavía. Crea tu primer idioma con el botón "+" en la esquina superior derecha.
 			</p>
 		) : (
-			languages.map((language) => (
-				<div class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-100">
-					<div class="p-5">
-						<div class="flex justify-between items-start mb-3">
-							<h3 class="text-lg font-semibold text-gray-800">{language.name}</h3>
-							<div class="dropdown relative">
-								<button class="text-gray-500 hover:text-gray-700 focus:outline-none" aria-label="Opciones">
-									<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-										<path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-									</svg>
-								</button>
-								<div class="dropdown-menu hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 py-1">
-									<button 
-										data-action="edit"
-										data-language-id={language.id}
-										data-language-name={language.name}
-										class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-									>
-										Editar idioma
+			languages.map((language) => {
+				const totalCards = language._totalCards || 0;
+				const learnedCards = language._learnedCards || 0;
+				const groupsCount = language._groups || 0;
+				const progressPercentage = totalCards > 0 ? (learnedCards / totalCards) * 100 : 0;
+				
+				return (
+					<div class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-100">
+						<div class="p-5">
+							<div class="flex justify-between items-start mb-3">
+								<h3 class="text-lg font-semibold text-gray-800">{language.name}</h3>
+								<div class="dropdown relative">
+									<button class="text-gray-500 hover:text-gray-700 focus:outline-none" aria-label="Opciones">
+										<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+											<path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+										</svg>
 									</button>
-									<button 
-										data-action="add-group"
-										data-language-id={language.id}
-										class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-									>
-										Añadir grupo
-									</button>
-									<button 
-										data-action="delete"
-										data-language-id={language.id}
-										class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
-									>
-										Eliminar idioma
-									</button>
+									<div class="dropdown-menu hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 py-1">
+										<button 
+											data-action="edit"
+											data-language-id={language.id} 
+											data-language-name={language.name}
+											class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+										>
+											Editar idioma
+										</button>
+										<button 
+											data-action="add-group"
+											data-language-id={language.id} 
+											class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+										>
+											Añadir grupo
+										</button>
+										<button 
+											data-action="delete"
+											data-language-id={language.id} 
+											class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+										>
+											Eliminar idioma
+										</button>
+									</div>
 								</div>
 							</div>
-						</div>
-						
-						<p class="text-gray-500 text-sm mb-3">
-							{language.groups?.length || 0} grupo{language.groups?.length !== 1 ? 's' : ''}, 
-							{language.totalCards || 0} tarjeta{language.totalCards !== 1 ? 's' : ''}
-						</p>
-						
-						<div class="mb-4">
-							<div class="flex justify-between text-xs mb-1">
-								<span class="text-gray-500">Progreso</span>
-								<span class="text-gray-700">{language.learnedCards || 0}/{language.totalCards || 0}</span>
+							
+							<p class="text-gray-500 text-sm mb-3">{groupsCount} grupo{groupsCount !== 1 ? 's' : ''}, {totalCards} tarjeta{totalCards !== 1 ? 's' : ''}</p>
+							
+							<div class="mb-4">
+								<div class="flex justify-between text-xs mb-1">
+									<span class="text-gray-500">Progreso</span>
+									<span class="text-gray-700">{learnedCards}/{totalCards}</span>
+								</div>
+								<div class="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+									<div class="bg-green-300 h-full rounded-full" style={`width: ${progressPercentage}%`}></div>
+								</div>
 							</div>
-							<div class="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
-								<div class="bg-green-300 h-full rounded-full" style={`width: ${language.progressPercentage || 0}%`}></div>
+							
+							<div class="flex space-x-2 mt-4">
+								<a 
+									href={`/language/${language.id}`}
+									class="flex-1 bg-purple-600 hover:bg-purple-700 text-white text-center py-2 px-4 rounded-md transition-colors text-sm font-medium"
+								>
+									Ver grupos
+								</a>
+								<button 
+									data-action="add-group"
+									data-language-id={language.id} 
+									class="bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-3 rounded-md transition-colors text-sm"
+								>
+									<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+										<path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+									</svg>
+								</button>
 							</div>
-						</div>
-						
-						<div class="flex space-x-2 mt-4">
-							<a 
-								href={`/language/${language.id}`}
-								class="flex-1 bg-purple-600 hover:bg-purple-700 text-white text-center py-2 px-4 rounded-md transition-colors text-sm font-medium"
-							>
-								Ver grupos
-							</a>
-							<button 
-								data-action="add-group"
-								data-language-id={language.id}
-								class="bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-3 rounded-md transition-colors text-sm"
-							>
-								<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-									<path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-								</svg>
-							</button>
 						</div>
 					</div>
-				</div>
-			))
+				);
+			})
 		)}
 	</div>
 </Layout>
 
 <script>
-	// Función para escapar HTML y prevenir XSS
-	function escapeHtml(unsafe: string): string {
-		return unsafe
-			.replace(/&/g, "&amp;")
-			.replace(/</g, "&lt;")
-			.replace(/>/g, "&gt;")
-			.replace(/"/g, "&quot;")
-			.replace(/'/g, "&#039;");
-	}
-
-	// Configurar eventos para elementos interactivos
+	// Esta sección solo contendría los event listeners para los botones
+	// y la lógica para mostrar/ocultar menús desplegables
 	document.addEventListener('DOMContentLoaded', () => {
-		// Botón de crear idioma
-		const createLanguageBtn = document.getElementById('create-language-btn');
-		createLanguageBtn?.addEventListener('click', () => {
-			// @ts-ignore - Ignoramos el error ya que sabemos que la función existe
-			window.openCreateLanguageModal();
-		});
-		
-		// Configurar eventos para los menús desplegables
+		// Configurar manejadores de eventos para los menús desplegables
 		const dropdownButtons = document.querySelectorAll('.dropdown button');
+		
 		dropdownButtons.forEach((button) => {
-			button.addEventListener('click', (e: Event) => {
+			button.addEventListener('click', (e) => {
 				e.stopPropagation();
-				const menu = (button as HTMLElement).nextElementSibling;
-				menu?.classList.toggle('hidden');
+				const dropdown = button.nextElementSibling;
+				dropdown?.classList.toggle('hidden');
 			});
 		});
 		
@@ -171,10 +157,17 @@ for (const language of languages) {
 			});
 		});
 		
-		// Configurar acciones para los botones de idioma
+		// Botón de crear idioma
+		const createLanguageBtn = document.getElementById('create-language-btn');
+		createLanguageBtn?.addEventListener('click', () => {
+			// @ts-ignore - Ignoramos el error ya que sabemos que la función existe
+			window.openCreateLanguageModal();
+		});
+		
+		// Configurar acciones para los botones de los idiomas
 		const actionButtons = document.querySelectorAll('[data-action]');
 		actionButtons.forEach((button) => {
-			button.addEventListener('click', (e: Event) => {
+			button.addEventListener('click', (e) => {
 				e.stopPropagation();
 				const target = e.currentTarget as HTMLElement;
 				const action = target.getAttribute('data-action');
@@ -195,9 +188,9 @@ for (const language of languages) {
 				}
 				
 				// Cerrar el menú después de la acción
-				const menu = target.closest('.dropdown')?.querySelector('.dropdown-menu');
-				if (menu) {
-					menu.classList.add('hidden');
+				const dropdownMenu = target.closest('.dropdown-menu');
+				if (dropdownMenu) {
+					dropdownMenu.classList.add('hidden');
 				}
 			});
 		});

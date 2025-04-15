@@ -1,0 +1,44 @@
+/* src/styles/global.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --accent: 124, 58, 237;
+  --accent-gradient: linear-gradient(45deg, rgb(var(--accent)), #da62c4 30%, white 60%);
+}
+
+html {
+  font-family: 'Poppins', system-ui, sans-serif;
+  background-color: #f8f8f6;
+}
+
+code {
+  font-family: Menlo, Monaco, Lucida Console, Liberation Mono, DejaVu Sans Mono,
+    Bitstream Vera Sans Mono, Courier New, monospace;
+}
+
+.container {
+  max-width: 1280px;
+}
+
+/* Estilos para los menús desplegables */
+.dropdown:hover .dropdown-menu {
+  display: block;
+}
+
+/* Animaciones para transiciones */
+.transition-shadow {
+  transition: box-shadow 0.2s ease-in-out, transform 0.2s ease-in-out;
+}
+
+/* Estilos para tarjetas al pasar el ratón */
+.hover\:shadow-md:hover {
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  transform: translateY(-2px);
+}
+
+/* Animación para toasts */
+.transition-opacity {
+  transition: opacity 0.3s ease-in-out;
+}

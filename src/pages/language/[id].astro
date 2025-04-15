@@ -1,33 +1,43 @@
 ---
 // src/pages/language/[id].astro
 import Layout from '../../layouts/Layout.astro';
+import { getLanguageById } from '../../services/languageService';
+import { getGroups } from '../../services/groupService';
+import { getCards } from '../../services/cardService';
 
 // En modo hybrid, podemos utilizar una opción más simple
 export const prerender = false;
 
 const { id } = Astro.params;
 
-// Definir interfaces
-interface Language {
-  id: string;
-  name: string;
+// Verificar si el id existe
+if (!id) {
+  return Astro.redirect('/');
 }
 
-interface StudyGroup {
-  id: string;
-  name: string;
-  languageId: string;
+// Obtener datos del idioma
+const language = await getLanguageById(id);
+
+// Si el idioma no existe, redirigir
+if (!language) {
+  return Astro.redirect('/');
 }
 
-interface StudyCard {
-  id: string;
-  english: string;
-  translation: string;
-  learned: boolean;
+// Obtener grupos del idioma
+const groups = await getGroups(id);
+
+// Para cada grupo, necesitamos calcular estadísticas
+for (const group of groups) {
+  const cards = await getCards(group.id);
+  const learnedCards = cards.filter(card => card.learned).length;
+  
+  // Agregar la información al grupo
+  group['_totalCards'] = cards.length;
+  group['_learnedCards'] = learnedCards;
 }
 ---
 
-<Layout title="LinguaLeap - Grupos">
+<Layout title={`LinguaLeap - ${language.name}`}>
 	<header class="flex justify-between items-center mb-8">
 		<div>
 			<a href="/" class="inline-flex items-center text-purple-600 hover:text-purple-700 mb-2">
@@ -36,8 +46,8 @@ interface StudyCard {
 				</svg>
 				Volver a idiomas
 			</a>
-			<h1 class="text-2xl font-bold text-gray-800" id="language-title">Cargando idioma...</h1>
-			<p class="text-gray-600" id="language-stats">Cargando grupos...</p>
+			<h1 class="text-2xl font-bold text-gray-800">{language.name}</h1>
+			<p class="text-gray-600">{groups.length} grupo{groups.length !== 1 ? 's' : ''}</p>
 		</div>
 		
 		<button 
@@ -52,44 +62,110 @@ interface StudyCard {
 	</header>
 	
 	<div id="groups-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-		<!-- Los grupos se cargarán desde localStorage con JavaScript -->
-		<p id="no-groups-message" class="text-gray-500 italic col-span-full py-8 text-center">
-			No hay grupos de estudio todavía. Crea tu primer grupo con el botón "+" en la esquina superior derecha.
-		</p>
+		{groups.length === 0 ? (
+			<p class="text-gray-500 italic col-span-full py-8 text-center">
+				No hay grupos de estudio todavía. Crea tu primer grupo con el botón "+" en la esquina superior derecha.
+			</p>
+		) : (
+			groups.map((group) => {
+				const totalCards = group._totalCards || 0;
+				const learnedCards = group._learnedCards || 0;
+				const progressPercentage = totalCards > 0 ? Math.round((learnedCards / totalCards) * 100) : 0;
+				
+				return (
+					<div class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-100">
+						<div class="p-5">
+							<div class="flex justify-between items-start mb-3">
+								<h3 class="text-lg font-semibold text-gray-800">{group.name}</h3>
+								<div class="dropdown relative">
+									<button class="text-gray-500 hover:text-gray-700 focus:outline-none" aria-label="Opciones">
+										<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+											<path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+										</svg>
+									</button>
+									<div class="dropdown-menu hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 py-1">
+										<button 
+											data-action="edit"
+											data-group-id={group.id} 
+											data-group-name={group.name}
+											class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+										>
+											Editar grupo
+										</button>
+										<button 
+											data-action="add-card"
+											data-group-id={group.id} 
+											class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+										>
+											Añadir tarjetas
+										</button>
+										<button 
+											data-action="delete"
+											data-group-id={group.id} 
+											class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+										>
+											Eliminar grupo
+										</button>
+									</div>
+								</div>
+							</div>
+							
+							<p class="text-gray-500 text-sm mb-3">{totalCards} tarjeta{totalCards !== 1 ? 's' : ''}</p>
+							
+							<div class="mb-4">
+								<div class="flex justify-between text-xs mb-1">
+									<span class="text-gray-500">Progreso</span>
+									<span class="text-gray-700">{learnedCards}/{totalCards}</span>
+								</div>
+								<div class="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+									<div class="bg-green-300 h-full rounded-full" style={`width: ${progressPercentage}%`}></div>
+								</div>
+							</div>
+							
+							<div class="flex space-x-2 mt-4">
+								<a 
+									href={`/study/${group.id}`}
+									class="flex-1 bg-purple-600 hover:bg-purple-700 text-white text-center py-2 px-4 rounded-md transition-colors text-sm font-medium"
+								>
+									Estudiar
+								</a>
+								<button 
+									data-action="add-card"
+									data-group-id={group.id} 
+									class="bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-3 rounded-md transition-colors text-sm"
+								>
+									<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+										<path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+									</svg>
+								</button>
+							</div>
+						</div>
+					</div>
+				);
+			})
+		)}
 	</div>
 </Layout>
 
 <script define:vars={{ languageId: id }}>
-	// Función para escapar HTML y prevenir XSS
-	function escapeHtml(unsafe) {
-		return unsafe
-			.replace(/&/g, "&amp;")
-			.replace(/</g, "&lt;")
-			.replace(/>/g, "&gt;")
-			.replace(/"/g, "&quot;")
-			.replace(/'/g, "&#039;");
-	}
-
-	// Cargar idioma y grupos desde localStorage
 	document.addEventListener('DOMContentLoaded', () => {
-		// Verificar si el idioma existe
-		const languagesJson = localStorage.getItem('languages') || '[]';
-		const languages = JSON.parse(languagesJson);
-		const currentLanguage = languages.find(language => language.id === languageId);
+		// Configurar manejadores de eventos para los menús desplegables
+		const dropdownButtons = document.querySelectorAll('.dropdown button');
 		
-		if (!currentLanguage) {
-			// Redirigir a la página principal si el idioma no existe
-			window.location.href = '/';
-			return;
-		}
+		dropdownButtons.forEach((button) => {
+			button.addEventListener('click', (e) => {
+				e.stopPropagation();
+				const dropdown = button.nextElementSibling;
+				dropdown?.classList.toggle('hidden');
+			});
+		});
 		
-		// Actualizar título y estadísticas
-		const titleElement = document.getElementById('language-title');
-		const statsElement = document.getElementById('language-stats');
-		
-		if (titleElement) {
-			titleElement.textContent = currentLanguage.name;
-		}
+		// Cerrar los menús al hacer clic en cualquier otro lugar
+		document.addEventListener('click', () => {
+			document.querySelectorAll('.dropdown-menu').forEach(menu => {
+				menu.classList.add('hidden');
+			});
+		});
 		
 		// Botón de crear grupo
 		const createGroupBtn = document.getElementById('create-group-btn');
@@ -98,150 +174,36 @@ interface StudyCard {
 			window.openCreateGroupModal(languageId);
 		});
 		
-		// Cargar grupos del idioma
-		const groupsContainer = document.getElementById('groups-container');
-		const noGroupsMessage = document.getElementById('no-groups-message');
-		const groupsJson = localStorage.getItem('studyGroups') || '[]';
-		const allGroups = JSON.parse(groupsJson);
-		const groups = allGroups.filter(group => group.languageId === languageId);
-		
-		// Actualizar estadísticas
-		if (statsElement) {
-			statsElement.textContent = `${groups.length} grupo${groups.length !== 1 ? 's' : ''}`;
-		}
-		
-		if (groups.length > 0 && groupsContainer && noGroupsMessage) {
-			noGroupsMessage.remove();
-			
-			groups.forEach((group) => {
-				// Obtener tarjetas del grupo
-				const cardsJson = localStorage.getItem(`cards_${group.id}`) || '[]';
-				const cards = JSON.parse(cardsJson);
-				const totalCards = cards.length;
-				const learnedCards = cards.filter(card => card.learned).length;
-				const progressPercentage = totalCards > 0 ? Math.round((learnedCards / totalCards) * 100) : 0;
+		// Configurar acciones para los botones de los grupos
+		const actionButtons = document.querySelectorAll('[data-action]');
+		actionButtons.forEach((button) => {
+			button.addEventListener('click', (e) => {
+				e.stopPropagation();
+				const target = e.currentTarget;
+				const action = target.getAttribute('data-action');
+				const groupId = target.getAttribute('data-group-id');
 				
-				const groupElement = document.createElement('div');
-				groupElement.className = 'bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-100';
+				if (!groupId) return;
 				
-				groupElement.innerHTML = `
-					<div class="p-5">
-						<div class="flex justify-between items-start mb-3">
-							<h3 class="text-lg font-semibold text-gray-800">${escapeHtml(group.name)}</h3>
-							<div class="dropdown relative">
-								<button class="text-gray-500 hover:text-gray-700 focus:outline-none" aria-label="Opciones">
-									<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-										<path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-									</svg>
-								</button>
-								<div class="dropdown-menu hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 py-1">
-									<button 
-										data-action="edit"
-										data-group-id="${group.id}" 
-										data-group-name="${escapeHtml(group.name)}"
-										class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-									>
-										Editar grupo
-									</button>
-									<button 
-										data-action="add-card"
-										data-group-id="${group.id}" 
-										class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-									>
-										Añadir tarjetas
-									</button>
-									<button 
-										data-action="delete"
-										data-group-id="${group.id}" 
-										class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
-									>
-										Eliminar grupo
-									</button>
-								</div>
-							</div>
-						</div>
-						
-						<p class="text-gray-500 text-sm mb-3">${totalCards} tarjeta${totalCards !== 1 ? 's' : ''}</p>
-						
-						<div class="mb-4">
-							<div class="flex justify-between text-xs mb-1">
-								<span class="text-gray-500">Progreso</span>
-								<span class="text-gray-700">${learnedCards}/${totalCards}</span>
-							</div>
-							<div class="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
-								<div class="bg-green-300 h-full rounded-full" style="width: ${progressPercentage}%"></div>
-							</div>
-						</div>
-						
-						<div class="flex space-x-2 mt-4">
-							<a 
-								href="/study/${group.id}"
-								class="flex-1 bg-purple-600 hover:bg-purple-700 text-white text-center py-2 px-4 rounded-md transition-colors text-sm font-medium"
-							>
-								Estudiar
-							</a>
-							<button 
-								data-action="add-card"
-								data-group-id="${group.id}" 
-								class="bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-3 rounded-md transition-colors text-sm"
-							>
-								<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-									<path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-								</svg>
-							</button>
-						</div>
-					</div>
-				`;
+				if (action === 'edit') {
+					const groupName = target.getAttribute('data-group-name') || '';
+					// @ts-ignore - Ignoramos el error ya que sabemos que la función existe
+					window.openEditGroupModal(groupId, groupName, languageId);
+				} else if (action === 'add-card') {
+					// @ts-ignore - Ignoramos el error ya que sabemos que la función existe
+					window.openAddCardModal(groupId);
+				} else if (action === 'delete') {
+					// @ts-ignore - Ignoramos el error ya que sabemos que la función existe
+					window.openDeleteGroupModal(groupId, languageId);
+				}
 				
-				groupsContainer.appendChild(groupElement);
-				
-				// Configurar eventos para el menú desplegable
-				const dropdownButton = groupElement.querySelector('.dropdown button');
-				const dropdownMenu = groupElement.querySelector('.dropdown-menu');
-				
-				dropdownButton?.addEventListener('click', (e) => {
-					e.stopPropagation();
-					dropdownMenu?.classList.toggle('hidden');
-				});
-				
-				// Cerrar el menú al hacer clic en cualquier otro lugar
-				document.addEventListener('click', () => {
-					document.querySelectorAll('.dropdown-menu').forEach(menu => {
-						menu.classList.add('hidden');
-					});
-				});
-				
-				// Configurar acciones para los botones del grupo
-				const actionButtons = groupElement.querySelectorAll('[data-action]');
-				actionButtons.forEach((button) => {
-					button.addEventListener('click', (e) => {
-						e.stopPropagation();
-						const target = e.currentTarget;
-						const action = target.getAttribute('data-action');
-						const groupId = target.getAttribute('data-group-id');
-						
-						if (!groupId) return;
-						
-						if (action === 'edit') {
-							const groupName = target.getAttribute('data-group-name') || '';
-							// @ts-ignore - Ignoramos el error ya que sabemos que la función existe
-							window.openEditGroupModal(groupId, groupName, languageId);
-						} else if (action === 'add-card') {
-							// @ts-ignore - Ignoramos el error ya que sabemos que la función existe
-							window.openAddCardModal(groupId);
-						} else if (action === 'delete') {
-							// @ts-ignore - Ignoramos el error ya que sabemos que la función existe
-							window.openDeleteGroupModal(groupId, languageId);
-						}
-						
-						// Cerrar el menú después de la acción
-						if (dropdownMenu) {
-							dropdownMenu.classList.add('hidden');
-						}
-					});
-				});
+				// Cerrar el menú después de la acción
+				const dropdownMenu = target.closest('.dropdown-menu');
+				if (dropdownMenu) {
+					dropdownMenu.classList.add('hidden');
+				}
 			});
-		}
+		});
 	});
 </script>
 

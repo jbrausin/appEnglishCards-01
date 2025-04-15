@@ -1,0 +1,103 @@
+---
+// src/components/modals/CardModals.astro
+---
+
+<!-- Modal para añadir tarjeta -->
+<div id="add-card-modal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center hidden z-50">
+    <div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
+        <h3 class="text-xl font-bold mb-4">Añadir nueva tarjeta</h3>
+        <form id="add-card-form">
+            <div class="mb-4">
+                <label for="card-english" class="block text-sm font-medium text-gray-700 mb-2">Frase en inglés</label>
+                <input
+                    type="text"
+                    id="card-english"
+                    name="card-english"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="Escribe la frase en inglés"
+                    required
+                />
+            </div>
+            
+            <div class="mb-6">
+                <label for="card-translation" class="block text-sm font-medium text-gray-700 mb-2">Traducción</label>
+                <input
+                    type="text"
+                    id="card-translation"
+                    name="card-translation"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="Escribe la traducción en español"
+                    required
+                />
+            </div>
+            
+            <div class="flex justify-end space-x-3">
+                <button type="button" id="cancel-add-card" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors">
+                    Cancelar
+                </button>
+                <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors">
+                    Guardar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal para editar tarjeta -->
+<div id="edit-card-modal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center hidden z-50">
+    <div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
+        <h3 class="text-xl font-bold mb-4">Editar tarjeta</h3>
+        <form id="edit-card-form">
+            <input type="hidden" id="edit-card-id" name="edit-card-id">
+            <input type="hidden" id="edit-card-group-id" name="edit-card-group-id">
+            <div class="mb-4">
+                <label for="edit-card-english" class="block text-sm font-medium text-gray-700 mb-2">Frase en inglés</label>
+                <input
+                    type="text"
+                    id="edit-card-english"
+                    name="edit-card-english"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    required
+                />
+            </div>
+            
+            <div class="mb-6">
+                <label for="edit-card-translation" class="block text-sm font-medium text-gray-700 mb-2">Traducción</label>
+                <input
+                    type="text"
+                    id="edit-card-translation"
+                    name="edit-card-translation"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    required
+                />
+            </div>
+            
+            <div class="flex justify-end space-x-3">
+                <button type="button" id="cancel-edit-card" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors">
+                    Cancelar
+                </button>
+                <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors">
+                    Guardar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de confirmación para eliminar tarjeta -->
+<div id="delete-card-modal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center hidden z-50">
+    <div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
+        <h3 class="text-xl font-bold mb-4">Confirmar eliminación</h3>
+        <p class="mb-6">¿Estás seguro de que deseas eliminar esta tarjeta? Esta acción no se puede deshacer.</p>
+        <input type="hidden" id="delete-card-id" name="delete-card-id">
+        <input type="hidden" id="delete-card-group-id" name="delete-card-group-group-id">
+        <div class="flex justify-end space-x-3">
+            <button id="cancel-delete-card" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors">
+                Cancelar
+            </button>
+            <button id="confirm-delete-card" class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors">
+                Eliminar
+            </button>
+        </div>
+    </div>
+</div>

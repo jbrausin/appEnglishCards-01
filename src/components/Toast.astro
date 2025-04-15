@@ -1,0 +1,35 @@
+---
+// src/components/Toast.astro
+---
+
+<!-- Toast notification container -->
+<div id="toast-container" class="fixed bottom-4 right-4 z-50"></div>
+
+<script>
+  // Función para mostrar notificaciones tipo toast
+  function showToast(message: string, type = 'success', duration = 3000) {
+    const toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) return;
+    
+    const toast = document.createElement('div');
+    toast.className = `p-4 mb-3 rounded-lg shadow-lg transition-opacity duration-300 ${
+      type === 'success' ? 'bg-green-500' : 'bg-red-500'
+    } text-white`;
+    toast.textContent = message;
+    
+    toastContainer.appendChild(toast);
+    
+    // Eliminar el toast después de la duración especificada
+    setTimeout(() => {
+      toast.classList.add('opacity-0');
+      setTimeout(() => {
+        toast.remove();
+      }, 300);
+    }, duration);
+  }
+
+  // Agregar la función al objeto window para acceder desde cualquier lugar
+  if (typeof window !== 'undefined') {
+    window.showToast = showToast;
+  }
+</script>
