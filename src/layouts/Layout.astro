@@ -1,6 +1,7 @@
 ---
 // src/layouts/Layout.astro
 import Sidebar from '../components/Sidebar.astro';
+import { supabase } from '../lib/supabase';
 
 export interface Props {
 	title: string;
@@ -311,6 +312,19 @@ const { title } = Astro.props;
 </style>
 
 <script>
+	import { 
+		createLanguage,
+		updateLanguage,
+		deleteLanguage,
+		createGroup,
+		updateGroup,
+		deleteGroup,
+		createCard,
+		updateCard,
+		deleteCard,
+		toggleCardLearned
+	} from '../lib/supabase';
+
 	// Definir tipos para funciones globales
 	declare global {
 		interface Window {
@@ -325,29 +339,11 @@ const { title } = Astro.props;
 			openDeleteCardModal: typeof openDeleteCardModal;
 		}
 	}
-
-	// Definir interfaces para TypeScript
-	interface Language {
-		id: string;
-		name: string;
-	}
-
-	interface StudyGroup {
-		id: string;
-		name: string;
-		languageId: string;
-	}
-
-	interface StudyCard {
-		id: string;
-		english: string;
-		translation: string;
-		learned: boolean;
-	}
 	
 	// Variables para modales
 	let currentLanguageId: string | null = null;
 	let currentGroupId: string | null = null;
+	let currentCardId: string | null = null;
 	
 	// Toast notification function
 	function showToast(message: string, type = 'success', duration = 3000) {
@@ -517,6 +513,7 @@ const { title } = Astro.props;
 		const translationInput = document.getElementById('edit-card-translation');
 		
 		if (modal && idInput && groupIdInput && englishInput && translationInput) {
+			currentCardId = cardId;
 			if (idInput instanceof HTMLInputElement) idInput.value = cardId;
 			if (groupIdInput instanceof HTMLInputElement) groupIdInput.value = groupId || (currentGroupId || "");
 			if (englishInput instanceof HTMLInputElement) englishInput.value = english;
@@ -531,6 +528,7 @@ const { title } = Astro.props;
 		const modal = document.getElementById('edit-card-modal');
 		if (modal) {
 			modal.classList.add('hidden');
+			currentCardId = null;
 		}
 	}
 	
@@ -540,6 +538,7 @@ const { title } = Astro.props;
 		const groupIdInput = document.getElementById('delete-card-group-id');
 		
 		if (modal && idInput && groupIdInput) {
+			currentCardId = cardId;
 			if (idInput instanceof HTMLInputElement) idInput.value = cardId;
 			if (groupIdInput instanceof HTMLInputElement) groupIdInput.value = groupId || (currentGroupId || "");
 			modal.classList.remove('hidden');
@@ -550,6 +549,7 @@ const { title } = Astro.props;
 		const modal = document.getElementById('delete-card-modal');
 		if (modal) {
 			modal.classList.add('hidden');
+			currentCardId = null;
 		}
 	}
 	
@@ -572,7 +572,7 @@ const { title } = Astro.props;
 		
 		// Formulario para crear idioma
 		const createLanguageForm = document.getElementById('create-language-form');
-		createLanguageForm?.addEventListener('submit', (e) => {
+		createLanguageForm?.addEventListener('submit', async (e) => {
 			e.preventDefault();
 			const nameInput = document.getElementById('language-name');
 			
@@ -581,32 +581,26 @@ const { title } = Astro.props;
 			const languageName = nameInput.value.trim();
 			
 			if (languageName) {
-				// Obtener idiomas existentes
-				const languagesJson = localStorage.getItem('languages') || '[]';
-				const languages = JSON.parse(languagesJson);
-				
-				// Crear nuevo idioma
-				const newLanguage = {
-					id: Date.now().toString(),
-					name: languageName
-				};
-				
-				// Guardar en localStorage
-				languages.push(newLanguage);
-				localStorage.setItem('languages', JSON.stringify(languages));
-				
-				// Cerrar modal y mostrar notificación
-				closeCreateLanguageModal();
-				showToast('¡Idioma creado con éxito!');
-				
-				// Recargar la página para mostrar el nuevo idioma
-				window.location.reload();
+				try {
+					// Crear idioma usando Supabase
+					await createLanguage(languageName);
+					
+					// Cerrar modal y mostrar notificación
+					closeCreateLanguageModal();
+					showToast('¡Idioma creado con éxito!');
+					
+					// Recargar la página para mostrar el nuevo idioma
+					window.location.reload();
+				} catch (error) {
+					console.error('Error al crear idioma:', error);
+					showToast('Error al crear idioma. Inténtalo de nuevo.', 'error');
+				}
 			}
 		});
 		
 		// Formulario para editar idioma
 		const editLanguageForm = document.getElementById('edit-language-form');
-		editLanguageForm?.addEventListener('submit', (e) => {
+		editLanguageForm?.addEventListener('submit', async (e) => {
 			e.preventDefault();
 			const nameInput = document.getElementById('edit-language-name');
 			
@@ -615,33 +609,26 @@ const { title } = Astro.props;
 			const languageName = nameInput.value.trim();
 			
 			if (languageName && currentLanguageId) {
-				// Obtener idiomas existentes
-				const languagesJson = localStorage.getItem('languages') || '[]';
-				const languages = JSON.parse(languagesJson);
-				
-				// Actualizar el nombre del idioma
-				const updatedLanguages = languages.map((language: Language) => {
-					if (language.id === currentLanguageId) {
-						return { ...language, name: languageName };
-					}
-					return language;
-				});
-				
-				// Guardar en localStorage
-				localStorage.setItem('languages', JSON.stringify(updatedLanguages));
-				
-				// Cerrar modal y mostrar notificación
-				closeEditLanguageModal();
-				showToast('¡Idioma actualizado con éxito!');
-				
-				// Recargar la página para mostrar los cambios
-				window.location.reload();
+				try {
+					// Actualizar idioma con Supabase
+					await updateLanguage(currentLanguageId, languageName);
+					
+					// Cerrar modal y mostrar notificación
+					closeEditLanguageModal();
+					showToast('¡Idioma actualizado con éxito!');
+					
+					// Recargar la página para mostrar los cambios
+					window.location.reload();
+				} catch (error) {
+					console.error('Error al actualizar idioma:', error);
+					showToast('Error al actualizar idioma. Inténtalo de nuevo.', 'error');
+				}
 			}
 		});
 		
 		// Formulario para crear grupo
 		const createGroupForm = document.getElementById('create-group-form');
-		createGroupForm?.addEventListener('submit', (e) => {
+		createGroupForm?.addEventListener('submit', async (e) => {
 			e.preventDefault();
 			const nameInput = document.getElementById('group-name');
 			const languageIdInput = document.getElementById('group-language-id');
@@ -653,255 +640,182 @@ const { title } = Astro.props;
 			const languageId = languageIdInput.value;
 			
 			if (groupName && languageId) {
-				// Obtener grupos existentes
-				const groupsJson = localStorage.getItem('studyGroups') || '[]';
-				const groups = JSON.parse(groupsJson);
-				
-				// Crear nuevo grupo
-				const newGroup = {
-					id: Date.now().toString(),
-					name: groupName,
-					languageId: languageId
-				};
-				
-				// Guardar en localStorage
-				groups.push(newGroup);
-				localStorage.setItem('studyGroups', JSON.stringify(groups));
-				
-				// Inicializar array de tarjetas vacío para este grupo
-				localStorage.setItem(`cards_${newGroup.id}`, JSON.stringify([]));
-				
-				// Cerrar modal y mostrar notificación
-				closeCreateGroupModal();
-				showToast('¡Grupo creado con éxito!');
-				
-				// Recargar la página para mostrar el nuevo grupo
-				window.location.reload();
+				try {
+					// Crear grupo con Supabase
+					await createGroup(groupName, languageId);
+					
+					// Cerrar modal y mostrar notificación
+					closeCreateGroupModal();
+					showToast('¡Grupo creado con éxito!');
+					
+					// Recargar la página para mostrar el nuevo grupo
+					window.location.reload();
+				} catch (error) {
+					console.error('Error al crear grupo:', error);
+					showToast('Error al crear grupo. Inténtalo de nuevo.', 'error');
+				}
 			}
 		});
 		
 		// Formulario para editar grupo
 		const editGroupForm = document.getElementById('edit-group-form');
-		editGroupForm?.addEventListener('submit', (e) => {
+		editGroupForm?.addEventListener('submit', async (e) => {
 			e.preventDefault();
 			const nameInput = document.getElementById('edit-group-name');
-			const languageIdInput = document.getElementById('edit-group-language-id');
 			
-			if (!nameInput || !(nameInput instanceof HTMLInputElement) || 
-				!languageIdInput || !(languageIdInput instanceof HTMLInputElement)) return;
+			if (!nameInput || !(nameInput instanceof HTMLInputElement) || !currentGroupId) return;
 			
 			const groupName = nameInput.value.trim();
-			const languageId = languageIdInput.value;
 			
-			if (groupName && currentGroupId) {
-				// Obtener grupos existentes
-				const groupsJson = localStorage.getItem('studyGroups') || '[]';
-				const groups = JSON.parse(groupsJson);
-				
-				// Actualizar el nombre del grupo
-				const updatedGroups = groups.map((group: StudyGroup) => {
-					if (group.id === currentGroupId) {
-						return { ...group, name: groupName, languageId: languageId };
-					}
-					return group;
-				});
-				
-				// Guardar en localStorage
-				localStorage.setItem('studyGroups', JSON.stringify(updatedGroups));
-				
-				// Cerrar modal y mostrar notificación
-				closeEditGroupModal();
-				showToast('¡Grupo actualizado con éxito!');
-				
-				// Recargar la página para mostrar los cambios
-				window.location.reload();
+			if (groupName) {
+				try {
+					// Actualizar grupo con Supabase
+					await updateGroup(currentGroupId, groupName);
+					
+					// Cerrar modal y mostrar notificación
+					closeEditGroupModal();
+					showToast('¡Grupo actualizado con éxito!');
+					
+					// Recargar la página para mostrar los cambios
+					window.location.reload();
+				} catch (error) {
+					console.error('Error al actualizar grupo:', error);
+					showToast('Error al actualizar grupo. Inténtalo de nuevo.', 'error');
+				}
 			}
 		});
 		
 		// Formulario para añadir tarjeta
 		const addCardForm = document.getElementById('add-card-form');
-		addCardForm?.addEventListener('submit', (e) => {
+		addCardForm?.addEventListener('submit', async (e) => {
 			e.preventDefault();
 			const englishInput = document.getElementById('card-english');
 			const translationInput = document.getElementById('card-translation');
 			
 			if (!englishInput || !(englishInput instanceof HTMLInputElement) || 
-				!translationInput || !(translationInput instanceof HTMLInputElement)) return;
+				!translationInput || !(translationInput instanceof HTMLInputElement) || 
+				!currentGroupId) return;
 			
 			const english = englishInput.value.trim();
 			const translation = translationInput.value.trim();
 			
-			if (english && translation && currentGroupId) {
-				// Obtener tarjetas existentes del grupo
-				const cardsJson = localStorage.getItem(`cards_${currentGroupId}`) || '[]';
-				const cards = JSON.parse(cardsJson);
-				
-				// Crear nueva tarjeta
-				const newCard = {
-					id: Date.now().toString(),
-					english,
-					translation,
-					learned: false
-				};
-				
-				// Guardar en localStorage
-				cards.push(newCard);
-				localStorage.setItem(`cards_${currentGroupId}`, JSON.stringify(cards));
-				
-				// Cerrar modal y mostrar notificación
-				closeAddCardModal();
-				showToast('¡Tarjeta añadida con éxito!');
-				
-				// Recargar la página si estamos en la vista de estudio
-				if (window.location.pathname.includes('/study/')) {
+			if (english && translation) {
+				try {
+					// Crear tarjeta con Supabase
+					await createCard(english, translation, currentGroupId);
+					
+					// Cerrar modal y mostrar notificación
+					closeAddCardModal();
+					showToast('¡Tarjeta añadida con éxito!');
+					
+					// Recargar la página si estamos en la vista de estudio
 					window.location.reload();
+				} catch (error) {
+					console.error('Error al crear tarjeta:', error);
+					showToast('Error al crear tarjeta. Inténtalo de nuevo.', 'error');
 				}
 			}
 		});
 		
 		// Formulario para editar tarjeta
 		const editCardForm = document.getElementById('edit-card-form');
-		editCardForm?.addEventListener('submit', (e) => {
+		editCardForm?.addEventListener('submit', async (e) => {
 			e.preventDefault();
-			const idInput = document.getElementById('edit-card-id');
-			const groupIdInput = document.getElementById('edit-card-group-id');
 			const englishInput = document.getElementById('edit-card-english');
 			const translationInput = document.getElementById('edit-card-translation');
 			
-			if (!idInput || !(idInput instanceof HTMLInputElement) || 
-				!groupIdInput || !(groupIdInput instanceof HTMLInputElement) || 
-				!englishInput || !(englishInput instanceof HTMLInputElement) || 
-				!translationInput || !(translationInput instanceof HTMLInputElement)) return;
+			if (!englishInput || !(englishInput instanceof HTMLInputElement) || 
+				!translationInput || !(translationInput instanceof HTMLInputElement) || 
+				!currentCardId) return;
 			
-			const cardId = idInput.value;
-			const groupId = groupIdInput.value;
 			const english = englishInput.value.trim();
 			const translation = translationInput.value.trim();
 			
-			if (cardId && groupId && english && translation) {
-				// Obtener tarjetas existentes del grupo
-				const cardsJson = localStorage.getItem(`cards_${groupId}`) || '[]';
-				const cards = JSON.parse(cardsJson);
-				
-				// Actualizar la tarjeta
-				const updatedCards = cards.map((card: StudyCard) => {
-					if (card.id === cardId) {
-						return { ...card, english, translation };
-					}
-					return card;
-				});
-				
-				// Guardar en localStorage
-				localStorage.setItem(`cards_${groupId}`, JSON.stringify(updatedCards));
-				
-				// Cerrar modal y mostrar notificación
-				closeEditCardModal();
-				showToast('¡Tarjeta actualizada con éxito!');
-				
-				// Recargar la página
-				window.location.reload();
+			if (english && translation) {
+				try {
+					// Actualizar tarjeta con Supabase
+					await updateCard(currentCardId, { english, translation });
+					
+					// Cerrar modal y mostrar notificación
+					closeEditCardModal();
+					showToast('¡Tarjeta actualizada con éxito!');
+					
+					// Recargar la página
+					window.location.reload();
+				} catch (error) {
+					console.error('Error al actualizar tarjeta:', error);
+					showToast('Error al actualizar tarjeta. Inténtalo de nuevo.', 'error');
+				}
 			}
 		});
 
 		// Confirmar eliminación de idioma
-		document.getElementById('confirm-delete-language')?.addEventListener('click', () => {
+		document.getElementById('confirm-delete-language')?.addEventListener('click', async () => {
 			if (currentLanguageId) {
-				// Obtener idiomas existentes
-				const languagesJson = localStorage.getItem('languages') || '[]';
-				const languages = JSON.parse(languagesJson);
-				
-				// Obtener grupos del idioma
-				const groupsJson = localStorage.getItem('studyGroups') || '[]';
-				const groups = JSON.parse(groupsJson);
-				const languageGroups = groups.filter((group: StudyGroup) => group.languageId === currentLanguageId);
-				
-				// Eliminar tarjetas de cada grupo
-				languageGroups.forEach((group: StudyGroup) => {
-					localStorage.removeItem(`cards_${group.id}`);
-				});
-				
-				// Filtrar grupos para eliminar los del idioma
-				const updatedGroups = groups.filter((group: StudyGroup) => group.languageId !== currentLanguageId);
-				localStorage.setItem('studyGroups', JSON.stringify(updatedGroups));
-				
-				// Filtrar el idioma a eliminar
-				const updatedLanguages = languages.filter((language: Language) => language.id !== currentLanguageId);
-				
-				// Guardar idiomas actualizados
-				localStorage.setItem('languages', JSON.stringify(updatedLanguages));
-				
-				// Cerrar modal y mostrar notificación
-				closeDeleteLanguageModal();
-				showToast('Idioma eliminado correctamente');
-				
-				// Recargar la página
-				window.location.reload();
+				try {
+					// Eliminar idioma con Supabase
+					await deleteLanguage(currentLanguageId);
+					
+					// Cerrar modal y mostrar notificación
+					closeDeleteLanguageModal();
+					showToast('Idioma eliminado correctamente');
+					
+					// Recargar la página
+					window.location.reload();
+				} catch (error) {
+					console.error('Error al eliminar idioma:', error);
+					showToast('Error al eliminar idioma. Inténtalo de nuevo.', 'error');
+				}
 			}
 		});
 		
 		// Confirmar eliminación de grupo
-		document.getElementById('confirm-delete-group')?.addEventListener('click', () => {
+		document.getElementById('confirm-delete-group')?.addEventListener('click', async () => {
 			if (currentGroupId) {
-				// Obtener grupos existentes
-				const groupsJson = localStorage.getItem('studyGroups') || '[]';
-				const groups = JSON.parse(groupsJson);
-				
-				// Filtrar el grupo a eliminar
-				const updatedGroups = groups.filter((group: StudyGroup) => group.id !== currentGroupId);
-				
-				// Guardar grupos actualizados
-				localStorage.setItem('studyGroups', JSON.stringify(updatedGroups));
-				
-				// Eliminar las tarjetas asociadas al grupo
-				localStorage.removeItem(`cards_${currentGroupId}`);
-				
-				// Cerrar modal y mostrar notificación
-				closeDeleteGroupModal();
-				showToast('Grupo eliminado correctamente');
-				
-				// Redirigir a la página de idioma si estamos en la vista de estudio
-				if (window.location.pathname.includes('/study/')) {
-					const languageIdInput = document.getElementById('delete-group-language-id');
-					if (languageIdInput && languageIdInput instanceof HTMLInputElement) {
-						window.location.href = `/language/${languageIdInput.value}`;
+				try {
+					// Eliminar grupo con Supabase
+					await deleteGroup(currentGroupId);
+					
+					// Cerrar modal y mostrar notificación
+					closeDeleteGroupModal();
+					showToast('Grupo eliminado correctamente');
+					
+					// Redirigir a la página de idioma si estamos en la vista de estudio
+					if (window.location.pathname.includes('/study/')) {
+						const languageIdInput = document.getElementById('delete-group-language-id');
+						if (languageIdInput && languageIdInput instanceof HTMLInputElement) {
+							window.location.href = `/language/${languageIdInput.value}`;
+						} else {
+							window.location.href = '/';
+						}
 					} else {
-						window.location.href = '/';
+						// Recargar la página para actualizar la lista de grupos
+						window.location.reload();
 					}
-				} else {
-					// Recargar la página para actualizar la lista de grupos
-					window.location.reload();
+				} catch (error) {
+					console.error('Error al eliminar grupo:', error);
+					showToast('Error al eliminar grupo. Inténtalo de nuevo.', 'error');
 				}
 			}
 		});
 		
 		// Confirmar eliminación de tarjeta
-		document.getElementById('confirm-delete-card')?.addEventListener('click', () => {
-			const idInput = document.getElementById('delete-card-id');
-			const groupIdInput = document.getElementById('delete-card-group-id');
-			
-			if (!idInput || !(idInput instanceof HTMLInputElement) || 
-				!groupIdInput || !(groupIdInput instanceof HTMLInputElement)) return;
-			
-			const cardId = idInput.value;
-			const groupId = groupIdInput.value;
-			
-			if (cardId && groupId) {
-				// Obtener tarjetas existentes del grupo
-				const cardsJson = localStorage.getItem(`cards_${groupId}`) || '[]';
-				const cards = JSON.parse(cardsJson);
-				
-				// Filtrar la tarjeta a eliminar
-				const updatedCards = cards.filter((card: StudyCard) => card.id !== cardId);
-				
-				// Guardar en localStorage
-				localStorage.setItem(`cards_${groupId}`, JSON.stringify(updatedCards));
-				
-				// Cerrar modal y mostrar notificación
-				closeDeleteCardModal();
-				showToast('Tarjeta eliminada correctamente');
-				
-				// Recargar la página
-				window.location.reload();
+		document.getElementById('confirm-delete-card')?.addEventListener('click', async () => {
+			if (currentCardId) {
+				try {
+					// Eliminar tarjeta con Supabase
+					await deleteCard(currentCardId);
+					
+					// Cerrar modal y mostrar notificación
+					closeDeleteCardModal();
+					showToast('Tarjeta eliminada correctamente');
+					
+					// Recargar la página
+					window.location.reload();
+				} catch (error) {
+					console.error('Error al eliminar tarjeta:', error);
+					showToast('Error al eliminar tarjeta. Inténtalo de nuevo.', 'error');
+				}
 			}
 		});
 	});

@@ -1,0 +1,19 @@
+---
+export interface Props {
+    words: string[];
+    showDebug?: boolean;
+}
+
+const { words, showDebug = false } = Astro.props;
+---
+
+{showDebug && (
+    <div class="p-2 mt-2 bg-gray-100 rounded-md">
+        <p class="text-xs text-gray-500 mb-1">Array de palabras:</p>
+        <div class="flex flex-wrap gap-1">
+            {words.map((word) => (
+                <span class="bg-gray-200 px-2 py-1 rounded text-xs">{word}</span>
+            ))}
+        </div>
+    </div>
+)}

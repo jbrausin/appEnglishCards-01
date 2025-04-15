@@ -1,15 +1,28 @@
 /// <reference path="../.astro/types.d.ts" />
 /// <reference types="astro/client" />
 
+interface ImportMetaEnv {
+  readonly PUBLIC_SUPABASE_URL: string;
+  readonly PUBLIC_SUPABASE_ANON_KEY: string;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
+
 interface Language {
   id: string;
   name: string;
+  user_id?: string;
+  created_at?: string;
 }
 
 interface StudyGroup {
   id: string;
   name: string;
-  languageId: string;
+  language_id: string;
+  user_id?: string;
+  created_at?: string;
 }
 
 interface StudyCard {
@@ -17,6 +30,9 @@ interface StudyCard {
   english: string;
   translation: string;
   learned: boolean;
+  group_id: string;
+  user_id?: string;
+  created_at?: string;
 }
 
 // Extend Window interface to include our custom functions

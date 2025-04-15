@@ -13,12 +13,44 @@
 		english: string;
 		translation: string;
 		learned: boolean;
+		words?: string[]; // Hacer opcional para compatibilidad con tarjetas antiguas
+	}
+
+	// Función para dividir una frase en palabras (para migración)
+	function splitIntoWords(phrase: string): string[] {
+		return phrase
+			.trim()
+			.split(/\s+/)
+			.map(word => word.replace(/[.,!?;:'"()]/g, ''))
+			.filter(Boolean);
+	}
+
+	// Migrar tarjetas existentes para añadir el campo words
+	function migrateCards(cards: StudyCard[]): StudyCard[] {
+		let needsMigration = false;
+		
+		cards.forEach(card => {
+			if (!card.words) {
+				card.words = splitIntoWords(card.english);
+				needsMigration = true;
+			}
+		});
+		
+		// Guardar cambios si es necesario
+		if (needsMigration) {
+			localStorage.setItem('studyCards', JSON.stringify(cards));
+		}
+		
+		return cards;
 	}
 
 	// Cargar tarjetas desde localStorage
 	const cardContainer: HTMLElement | null = document.getElementById('card-container');
 	const noCardsMessage: HTMLElement | null = document.getElementById('no-cards-message');
-	const cards: StudyCard[] = JSON.parse(localStorage.getItem('studyCards') || '[]');
+	let cards: StudyCard[] = JSON.parse(localStorage.getItem('studyCards') || '[]');
+	
+	// Migrar tarjetas existentes si es necesario
+	cards = migrateCards(cards);
 	
 	// Variables para el manejo de modales
 	let currentCardId: string | null = null;
@@ -109,7 +141,9 @@
 				// Actualizar la tarjeta
 				const updatedCards = cards.map(card => {
 					if (card.id === currentCardId) {
-						return { ...card, english, translation };
+						// Generar array de palabras
+						const words = splitIntoWords(english);
+						return { ...card, english, translation, words };
 					}
 					return card;
 				});
@@ -146,6 +180,7 @@
 				<div class="p-5">
 					<h3 class="text-lg font-bold">${escapeHtml(card.english)}</h3>
 					<p class="text-gray-600">${escapeHtml(card.translation)}</p>
+					${card.words ? `<p class="text-xs text-gray-400 mt-2">Palabras: ${card.words.join(', ')}</p>` : ''}
 				</div>
 				<div class="bg-gray-50 px-5 py-3 flex justify-between">
 					<button 

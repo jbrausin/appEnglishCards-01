@@ -1,4 +1,12 @@
 ---
+// Definimos la interfaz StudyCard para asegurar un tipado correcto
+interface StudyCard {
+  id: string;
+  english: string;
+  translation: string;
+  learned: boolean;
+  words: string[];
+}
 ---
 
 <form id="add-form" class="bg-white p-6 rounded-lg shadow-md">
@@ -36,16 +44,101 @@
 </form>
 
 <script>
-	// Este script solo agrega funcionalidad al formulario cuando se carga
-	// La lógica principal está en index.astro para evitar problemas de alcance de las variables
+	// Función para dividir una frase en palabras
+	function splitIntoWords(phrase: string): string[] {
+		return phrase
+			.trim()
+			.split(/\s+/)
+			.map(word => word.replace(/[.,!?;:'"()]/g, ''))
+			.filter(Boolean);
+	}
+
+	// Función para generar un ID único
+	function generateId(): string {
+		return Date.now().toString();
+	}
+
+	// Función para mostrar notificación (opcional)
+	function showNotification(message: string, type: 'success' | 'error' = 'success'): void {
+		// Si tienes un sistema de notificaciones, úsalo aquí
+		console.log(`[${type}] ${message}`);
+	}
+
+	// Este script agrega funcionalidad al formulario cuando se carga
 	document.addEventListener('DOMContentLoaded', () => {
-		const form = document.getElementById('add-form');
-		const englishInput = document.getElementById('english') as HTMLInputElement;
-		const translationInput = document.getElementById('translation') as HTMLInputElement;
+		const form = document.getElementById('add-form') as HTMLFormElement | null;
+		const englishInput = document.getElementById('english') as HTMLInputElement | null;
+		const translationInput = document.getElementById('translation') as HTMLInputElement | null;
 		
 		// Asegurar que los inputs estén enfocados al cargar
 		if (englishInput && !englishInput.value) {
 			englishInput.focus();
+		}
+
+		// Asegurarse de que el formulario existe antes de añadir el evento
+		if (form) {
+			form.addEventListener('submit', (e: Event) => {
+				e.preventDefault();
+				
+				// Verificar que los elementos existen
+				if (!englishInput || !translationInput) {
+					console.error('Inputs de formulario no encontrados');
+					return;
+				}
+				
+				// Obtener valores
+				const english = englishInput.value.trim();
+				const translation = translationInput.value.trim();
+				
+				// Validar campos
+				if (!english || !translation) {
+					showNotification('Por favor completa todos los campos', 'error');
+					return;
+				}
+				
+				try {
+					// Dividir la frase en palabras
+					const words = splitIntoWords(english);
+					
+					// Obtener tarjetas existentes
+					const studyCardsJson = localStorage.getItem('studyCards') || '[]';
+					const studyCards: StudyCard[] = JSON.parse(studyCardsJson);
+					
+					// Crear nueva tarjeta
+					const newCard: StudyCard = {
+						id: generateId(),
+						english,
+						translation,
+						learned: false,
+						words
+					};
+					
+					// Añadir la nueva tarjeta y guardar
+					studyCards.push(newCard);
+					localStorage.setItem('studyCards', JSON.stringify(studyCards));
+					
+					// Limpiar el formulario
+					form.reset();
+					englishInput.focus();
+					
+					// Mostrar notificación
+					showNotification('Tarjeta añadida correctamente');
+					
+					// Recargar las tarjetas (si existe ese elemento)
+					if (window.location.pathname.includes('/study/')) {
+						window.location.reload();
+					} else {
+						// Intentar desencadenar un evento para notificar que se añadió una nueva tarjeta
+						const event = new CustomEvent('cardAdded', { detail: newCard });
+						document.dispatchEvent(event);
+					}
+				} catch (error) {
+					console.error('Error al guardar la tarjeta:', error);
+					showNotification('Error al guardar la tarjeta', 'error');
+				}
+			});
+		} else {
+			console.error('Formulario no encontrado');
 		}
 	});
 </script>
