@@ -1,0 +1,23 @@
+[33mcommit 6bd9c98075909db30934b37452a824a3e85b105c[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: Javier Brausin <jbrausin@gmail.com>
+Date:   Mon Apr 14 17:44:56 2025 -0500
+
+    Se agrego modal con opciones de estudio en las cards de study
+
+[33mcommit 47a852d778bae378e4e871792af5c7b23658135c[m
+Author: Javier Brausin <jbrausin@gmail.com>
+Date:   Mon Apr 14 17:22:39 2025 -0500
+
+    first commit
+
+[33mcommit e134b627ac976b240bf431ccbcb43d5754ae5c10[m
+Author: Javier Brausin <jbrausin@gmail.com>
+Date:   Mon Apr 14 17:21:50 2025 -0500
+
+    Un primer coomit
+
+[33mcommit ca8b780d172b185244f147551dd968cdbbdb5403[m
+Author: houston[bot] <astrobot-houston@users.noreply.github.com>
+Date:   Mon Apr 14 14:23:55 2025 -0500
+
+    Initial commit from Astro

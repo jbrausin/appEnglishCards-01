@@ -10,7 +10,7 @@
     </div>
     
     <nav class="space-y-2">
-        <a href="/" class="flex items-center py-2 px-4 rounded-lg bg-purple-500 text-white">
+        <a href="/" class="flex items-center py-2 px-4 rounded-lg bg-primary text-white">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
             </svg>
@@ -44,10 +44,10 @@
     </div>
     
     <div class="mt-auto pt-8">
-        <div class="bg-gradient-to-r from-purple-500 to-purple-700 p-4 rounded-lg text-white">
+        <div class="bg-gradient-to-r from-primary to-primary/80 p-4 rounded-lg text-white">
             <h3 class="font-medium mb-2">Descarga nuestra app</h3>
-            <p class="text-sm text-purple-100 mb-3">Aprende inglés en cualquier lugar</p>
-            <button class="w-full bg-white text-purple-600 px-3 py-2 rounded-md text-sm font-medium">Descargar</button>
+            <p class="text-sm text-white/80 mb-3">Aprende inglés en cualquier lugar</p>
+            <button class="w-full bg-accent text-dark px-3 py-2 rounded-md text-sm font-medium hover:bg-opacity-90 transition-colors">Descargar</button>
         </div>
     </div>
 </div>
@@ -63,10 +63,10 @@
         let totalLearnedCards = 0;
         
         // Contar tarjetas totales y aprendidas
-        groups.forEach(group => {
+        groups.forEach((group: { id: string }) => {
             const groupCards = JSON.parse(localStorage.getItem(`cards_${group.id}`) || '[]');
             totalCards += groupCards.length;
-            totalLearnedCards += groupCards.filter(card => card.learned).length;
+            totalLearnedCards += groupCards.filter((card: { learned: boolean }) => card.learned).length;
         });
         
         // Actualizar elementos en el DOM
