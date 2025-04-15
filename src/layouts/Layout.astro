@@ -38,11 +38,69 @@ const { title } = Astro.props;
 			</div>
 		</div>
 
+		<!-- Modal para crear idioma -->
+		<div id="create-language-modal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center hidden z-50">
+			<div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
+				<h3 class="text-xl font-bold mb-4">Crear nuevo idioma</h3>
+				<form id="create-language-form">
+					<div class="mb-6">
+						<label for="language-name" class="block text-sm font-medium text-gray-700 mb-2">Nombre del idioma</label>
+						<input
+							type="text"
+							id="language-name"
+							name="language-name"
+							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+							placeholder="Ej: Inglés, Francés, Alemán..."
+							required
+						/>
+					</div>
+					
+					<div class="flex justify-end space-x-3">
+						<button type="button" id="cancel-create-language" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors">
+							Cancelar
+						</button>
+						<button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors">
+							Guardar
+						</button>
+					</div>
+				</form>
+			</div>
+		</div>
+
+		<!-- Modal para editar idioma -->
+		<div id="edit-language-modal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center hidden z-50">
+			<div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
+				<h3 class="text-xl font-bold mb-4">Editar idioma</h3>
+				<form id="edit-language-form">
+					<div class="mb-6">
+						<label for="edit-language-name" class="block text-sm font-medium text-gray-700 mb-2">Nombre del idioma</label>
+						<input
+							type="text"
+							id="edit-language-name"
+							name="edit-language-name"
+							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+							required
+						/>
+					</div>
+					
+					<div class="flex justify-end space-x-3">
+						<button type="button" id="cancel-edit-language" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors">
+							Cancelar
+						</button>
+						<button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors">
+							Guardar
+						</button>
+					</div>
+				</form>
+			</div>
+		</div>
+
 		<!-- Modal para crear grupo -->
 		<div id="create-group-modal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center hidden z-50">
 			<div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
 				<h3 class="text-xl font-bold mb-4">Crear nuevo grupo</h3>
 				<form id="create-group-form">
+					<input type="hidden" id="group-language-id" name="group-language-id">
 					<div class="mb-6">
 						<label for="group-name" class="block text-sm font-medium text-gray-700 mb-2">Nombre del grupo</label>
 						<input
@@ -72,6 +130,7 @@ const { title } = Astro.props;
 			<div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
 				<h3 class="text-xl font-bold mb-4">Editar grupo</h3>
 				<form id="edit-group-form">
+					<input type="hidden" id="edit-group-language-id" name="edit-group-language-id">
 					<div class="mb-6">
 						<label for="edit-group-name" class="block text-sm font-medium text-gray-700 mb-2">Nombre del grupo</label>
 						<input
@@ -136,11 +195,28 @@ const { title } = Astro.props;
 			</div>
 		</div>
 
+		<!-- Modal de confirmación para eliminar idioma -->
+		<div id="delete-language-modal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center hidden z-50">
+			<div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
+				<h3 class="text-xl font-bold mb-4">Confirmar eliminación</h3>
+				<p class="mb-6">¿Estás seguro de que deseas eliminar este idioma? Se eliminarán todos los grupos y tarjetas asociadas. Esta acción no se puede deshacer.</p>
+				<div class="flex justify-end space-x-3">
+					<button id="cancel-delete-language" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors">
+						Cancelar
+					</button>
+					<button id="confirm-delete-language" class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors">
+						Eliminar
+					</button>
+				</div>
+			</div>
+		</div>
+
 		<!-- Modal de confirmación para eliminar grupo -->
 		<div id="delete-group-modal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center hidden z-50">
 			<div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
 				<h3 class="text-xl font-bold mb-4">Confirmar eliminación</h3>
 				<p class="mb-6">¿Estás seguro de que deseas eliminar este grupo? Se eliminarán todas las tarjetas asociadas. Esta acción no se puede deshacer.</p>
+				<input type="hidden" id="delete-group-language-id" name="delete-group-language-id">
 				<div class="flex justify-end space-x-3">
 					<button id="cancel-delete-group" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors">
 						Cancelar
@@ -238,6 +314,9 @@ const { title } = Astro.props;
 	// Definir tipos para funciones globales
 	declare global {
 		interface Window {
+			openCreateLanguageModal: typeof openCreateLanguageModal;
+			openEditLanguageModal: typeof openEditLanguageModal;
+			openDeleteLanguageModal: typeof openDeleteLanguageModal;
 			openCreateGroupModal: typeof openCreateGroupModal;
 			openEditGroupModal: typeof openEditGroupModal;
 			openAddCardModal: typeof openAddCardModal;
@@ -248,9 +327,15 @@ const { title } = Astro.props;
 	}
 
 	// Definir interfaces para TypeScript
+	interface Language {
+		id: string;
+		name: string;
+	}
+
 	interface StudyGroup {
 		id: string;
 		name: string;
+		languageId: string;
 	}
 
 	interface StudyCard {
@@ -261,6 +346,7 @@ const { title } = Astro.props;
 	}
 	
 	// Variables para modales
+	let currentLanguageId: string | null = null;
 	let currentGroupId: string | null = null;
 	
 	// Toast notification function
@@ -285,10 +371,68 @@ const { title } = Astro.props;
 		}, duration);
 	}
 	
-	// Funciones para los modales
-	function openCreateGroupModal() {
-		const modal = document.getElementById('create-group-modal');
+	// Funciones para los modales de idioma
+	function openCreateLanguageModal() {
+		const modal = document.getElementById('create-language-modal');
 		if (modal) {
+			modal.classList.remove('hidden');
+			const input = document.getElementById('language-name');
+			if (input && input instanceof HTMLInputElement) input.focus();
+		}
+	}
+	
+	function closeCreateLanguageModal() {
+		const modal = document.getElementById('create-language-modal');
+		if (modal) {
+			modal.classList.add('hidden');
+			const form = document.getElementById('create-language-form');
+			if (form && form instanceof HTMLFormElement) form.reset();
+		}
+	}
+	
+	function openEditLanguageModal(languageId: string, languageName: string) {
+		const modal = document.getElementById('edit-language-modal');
+		const input = document.getElementById('edit-language-name');
+		
+		if (modal && input && input instanceof HTMLInputElement) {
+			currentLanguageId = languageId;
+			input.value = languageName;
+			modal.classList.remove('hidden');
+			input.focus();
+		}
+	}
+	
+	function closeEditLanguageModal() {
+		const modal = document.getElementById('edit-language-modal');
+		if (modal) {
+			modal.classList.add('hidden');
+			currentLanguageId = null;
+		}
+	}
+	
+	function openDeleteLanguageModal(languageId: string) {
+		const modal = document.getElementById('delete-language-modal');
+		if (modal) {
+			currentLanguageId = languageId;
+			modal.classList.remove('hidden');
+		}
+	}
+	
+	function closeDeleteLanguageModal() {
+		const modal = document.getElementById('delete-language-modal');
+		if (modal) {
+			modal.classList.add('hidden');
+			currentLanguageId = null;
+		}
+	}
+	
+	// Funciones para los modales de grupo
+	function openCreateGroupModal(languageId: string) {
+		const modal = document.getElementById('create-group-modal');
+		const languageIdInput = document.getElementById('group-language-id');
+		
+		if (modal && languageIdInput && languageIdInput instanceof HTMLInputElement) {
+			languageIdInput.value = languageId;
 			modal.classList.remove('hidden');
 			const input = document.getElementById('group-name');
 			if (input && input instanceof HTMLInputElement) input.focus();
@@ -304,13 +448,15 @@ const { title } = Astro.props;
 		}
 	}
 	
-	function openEditGroupModal(groupId: string, groupName: string) {
+	function openEditGroupModal(groupId: string, groupName: string, languageId: string) {
 		const modal = document.getElementById('edit-group-modal');
 		const input = document.getElementById('edit-group-name');
+		const languageIdInput = document.getElementById('edit-group-language-id');
 		
-		if (modal && input && input instanceof HTMLInputElement) {
+		if (modal && input && input instanceof HTMLInputElement && languageIdInput && languageIdInput instanceof HTMLInputElement) {
 			currentGroupId = groupId;
 			input.value = groupName;
+			languageIdInput.value = languageId;
 			modal.classList.remove('hidden');
 			input.focus();
 		}
@@ -344,10 +490,13 @@ const { title } = Astro.props;
 		}
 	}
 	
-	function openDeleteGroupModal(groupId: string) {
+	function openDeleteGroupModal(groupId: string, languageId: string) {
 		const modal = document.getElementById('delete-group-modal');
-		if (modal) {
+		const languageIdInput = document.getElementById('delete-group-language-id');
+		
+		if (modal && languageIdInput && languageIdInput instanceof HTMLInputElement) {
 			currentGroupId = groupId;
+			languageIdInput.value = languageId;
 			modal.classList.remove('hidden');
 		}
 	}
@@ -406,6 +555,11 @@ const { title } = Astro.props;
 	
 	// Configurar event listeners al cargar el DOM
 	document.addEventListener('DOMContentLoaded', () => {
+		// Event listeners para modales de idiomas
+		document.getElementById('cancel-create-language')?.addEventListener('click', closeCreateLanguageModal);
+		document.getElementById('cancel-edit-language')?.addEventListener('click', closeEditLanguageModal);
+		document.getElementById('cancel-delete-language')?.addEventListener('click', closeDeleteLanguageModal);
+		
 		// Event listeners para modales de grupos
 		document.getElementById('cancel-create-group')?.addEventListener('click', closeCreateGroupModal);
 		document.getElementById('cancel-edit-group')?.addEventListener('click', closeEditGroupModal);
@@ -416,17 +570,89 @@ const { title } = Astro.props;
 		document.getElementById('cancel-edit-card')?.addEventListener('click', closeEditCardModal);
 		document.getElementById('cancel-delete-card')?.addEventListener('click', closeDeleteCardModal);
 		
+		// Formulario para crear idioma
+		const createLanguageForm = document.getElementById('create-language-form');
+		createLanguageForm?.addEventListener('submit', (e) => {
+			e.preventDefault();
+			const nameInput = document.getElementById('language-name');
+			
+			if (!nameInput || !(nameInput instanceof HTMLInputElement)) return;
+			
+			const languageName = nameInput.value.trim();
+			
+			if (languageName) {
+				// Obtener idiomas existentes
+				const languagesJson = localStorage.getItem('languages') || '[]';
+				const languages = JSON.parse(languagesJson);
+				
+				// Crear nuevo idioma
+				const newLanguage = {
+					id: Date.now().toString(),
+					name: languageName
+				};
+				
+				// Guardar en localStorage
+				languages.push(newLanguage);
+				localStorage.setItem('languages', JSON.stringify(languages));
+				
+				// Cerrar modal y mostrar notificación
+				closeCreateLanguageModal();
+				showToast('¡Idioma creado con éxito!');
+				
+				// Recargar la página para mostrar el nuevo idioma
+				window.location.reload();
+			}
+		});
+		
+		// Formulario para editar idioma
+		const editLanguageForm = document.getElementById('edit-language-form');
+		editLanguageForm?.addEventListener('submit', (e) => {
+			e.preventDefault();
+			const nameInput = document.getElementById('edit-language-name');
+			
+			if (!nameInput || !(nameInput instanceof HTMLInputElement)) return;
+			
+			const languageName = nameInput.value.trim();
+			
+			if (languageName && currentLanguageId) {
+				// Obtener idiomas existentes
+				const languagesJson = localStorage.getItem('languages') || '[]';
+				const languages = JSON.parse(languagesJson);
+				
+				// Actualizar el nombre del idioma
+				const updatedLanguages = languages.map((language: Language) => {
+					if (language.id === currentLanguageId) {
+						return { ...language, name: languageName };
+					}
+					return language;
+				});
+				
+				// Guardar en localStorage
+				localStorage.setItem('languages', JSON.stringify(updatedLanguages));
+				
+				// Cerrar modal y mostrar notificación
+				closeEditLanguageModal();
+				showToast('¡Idioma actualizado con éxito!');
+				
+				// Recargar la página para mostrar los cambios
+				window.location.reload();
+			}
+		});
+		
 		// Formulario para crear grupo
 		const createGroupForm = document.getElementById('create-group-form');
 		createGroupForm?.addEventListener('submit', (e) => {
 			e.preventDefault();
 			const nameInput = document.getElementById('group-name');
+			const languageIdInput = document.getElementById('group-language-id');
 			
-			if (!nameInput || !(nameInput instanceof HTMLInputElement)) return;
+			if (!nameInput || !(nameInput instanceof HTMLInputElement) || 
+				!languageIdInput || !(languageIdInput instanceof HTMLInputElement)) return;
 			
 			const groupName = nameInput.value.trim();
+			const languageId = languageIdInput.value;
 			
-			if (groupName) {
+			if (groupName && languageId) {
 				// Obtener grupos existentes
 				const groupsJson = localStorage.getItem('studyGroups') || '[]';
 				const groups = JSON.parse(groupsJson);
@@ -434,7 +660,8 @@ const { title } = Astro.props;
 				// Crear nuevo grupo
 				const newGroup = {
 					id: Date.now().toString(),
-					name: groupName
+					name: groupName,
+					languageId: languageId
 				};
 				
 				// Guardar en localStorage
@@ -458,10 +685,13 @@ const { title } = Astro.props;
 		editGroupForm?.addEventListener('submit', (e) => {
 			e.preventDefault();
 			const nameInput = document.getElementById('edit-group-name');
+			const languageIdInput = document.getElementById('edit-group-language-id');
 			
-			if (!nameInput || !(nameInput instanceof HTMLInputElement)) return;
+			if (!nameInput || !(nameInput instanceof HTMLInputElement) || 
+				!languageIdInput || !(languageIdInput instanceof HTMLInputElement)) return;
 			
 			const groupName = nameInput.value.trim();
+			const languageId = languageIdInput.value;
 			
 			if (groupName && currentGroupId) {
 				// Obtener grupos existentes
@@ -471,7 +701,7 @@ const { title } = Astro.props;
 				// Actualizar el nombre del grupo
 				const updatedGroups = groups.map((group: StudyGroup) => {
 					if (group.id === currentGroupId) {
-						return { ...group, name: groupName };
+						return { ...group, name: groupName, languageId: languageId };
 					}
 					return group;
 				});
@@ -572,6 +802,42 @@ const { title } = Astro.props;
 				window.location.reload();
 			}
 		});
+
+		// Confirmar eliminación de idioma
+		document.getElementById('confirm-delete-language')?.addEventListener('click', () => {
+			if (currentLanguageId) {
+				// Obtener idiomas existentes
+				const languagesJson = localStorage.getItem('languages') || '[]';
+				const languages = JSON.parse(languagesJson);
+				
+				// Obtener grupos del idioma
+				const groupsJson = localStorage.getItem('studyGroups') || '[]';
+				const groups = JSON.parse(groupsJson);
+				const languageGroups = groups.filter((group: StudyGroup) => group.languageId === currentLanguageId);
+				
+				// Eliminar tarjetas de cada grupo
+				languageGroups.forEach((group: StudyGroup) => {
+					localStorage.removeItem(`cards_${group.id}`);
+				});
+				
+				// Filtrar grupos para eliminar los del idioma
+				const updatedGroups = groups.filter((group: StudyGroup) => group.languageId !== currentLanguageId);
+				localStorage.setItem('studyGroups', JSON.stringify(updatedGroups));
+				
+				// Filtrar el idioma a eliminar
+				const updatedLanguages = languages.filter((language: Language) => language.id !== currentLanguageId);
+				
+				// Guardar idiomas actualizados
+				localStorage.setItem('languages', JSON.stringify(updatedLanguages));
+				
+				// Cerrar modal y mostrar notificación
+				closeDeleteLanguageModal();
+				showToast('Idioma eliminado correctamente');
+				
+				// Recargar la página
+				window.location.reload();
+			}
+		});
 		
 		// Confirmar eliminación de grupo
 		document.getElementById('confirm-delete-group')?.addEventListener('click', () => {
@@ -593,9 +859,14 @@ const { title } = Astro.props;
 				closeDeleteGroupModal();
 				showToast('Grupo eliminado correctamente');
 				
-				// Redirigir a la página principal si estamos en la vista de estudio
+				// Redirigir a la página de idioma si estamos en la vista de estudio
 				if (window.location.pathname.includes('/study/')) {
-					window.location.href = '/';
+					const languageIdInput = document.getElementById('delete-group-language-id');
+					if (languageIdInput && languageIdInput instanceof HTMLInputElement) {
+						window.location.href = `/language/${languageIdInput.value}`;
+					} else {
+						window.location.href = '/';
+					}
 				} else {
 					// Recargar la página para actualizar la lista de grupos
 					window.location.reload();
@@ -637,6 +908,9 @@ const { title } = Astro.props;
 	
 	// Exportar funciones para uso global
 	if (typeof window !== 'undefined') {
+		window.openCreateLanguageModal = openCreateLanguageModal;
+		window.openEditLanguageModal = openEditLanguageModal;
+		window.openDeleteLanguageModal = openDeleteLanguageModal;
 		window.openCreateGroupModal = openCreateGroupModal;
 		window.openEditGroupModal = openEditGroupModal;
 		window.openAddCardModal = openAddCardModal;

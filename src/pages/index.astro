@@ -3,9 +3,15 @@
 import Layout from '../layouts/Layout.astro';
 
 // Definir interfaces de TypeScript en el lado del servidor
+interface Language {
+  id: string;
+  name: string;
+}
+
 interface StudyGroup {
   id: string;
   name: string;
+  languageId: string;
 }
 
 interface StudyCard {
@@ -16,17 +22,17 @@ interface StudyCard {
 }
 ---
 
-<Layout title="LinguaLeap - Grupos de Estudio">
+<Layout title="LinguaLeap - Idiomas">
 	<header class="flex justify-between items-center mb-8">
 		<div>
-			<h1 class="text-2xl font-bold text-gray-800">Grupos de Estudio</h1>
-			<p class="text-gray-600">Organiza tus frases por categorías</p>
+			<h1 class="text-2xl font-bold text-gray-800">Idiomas</h1>
+			<p class="text-gray-600">Selecciona un idioma para empezar</p>
 		</div>
 		
 		<button 
-			id="create-group-btn" 
+			id="create-language-btn" 
 			class="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center shadow-md hover:bg-purple-700 transition-colors"
-			aria-label="Crear nuevo grupo"
+			aria-label="Crear nuevo idioma"
 		>
 			<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -34,10 +40,10 @@ interface StudyCard {
 		</button>
 	</header>
 	
-	<div id="groups-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-		<!-- Los grupos se cargarán desde localStorage con JavaScript -->
-		<p id="no-groups-message" class="text-gray-500 italic col-span-full py-8 text-center">
-			No hay grupos de estudio todavía. Crea tu primer grupo con el botón "+" en la esquina superior derecha.
+	<div id="languages-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+		<!-- Los idiomas se cargarán desde localStorage con JavaScript -->
+		<p id="no-languages-message" class="text-gray-500 italic col-span-full py-8 text-center">
+			No hay idiomas todavía. Crea tu primer idioma con el botón "+" en la esquina superior derecha.
 		</p>
 	</div>
 </Layout>
@@ -53,38 +59,49 @@ interface StudyCard {
 			.replace(/'/g, "&#039;");
 	}
 
-	// Cargar grupos desde localStorage
+	// Cargar idiomas desde localStorage
 	document.addEventListener('DOMContentLoaded', () => {
-		const groupsContainer = document.getElementById('groups-container');
-		const noGroupsMessage = document.getElementById('no-groups-message');
-		const groupsJson = localStorage.getItem('studyGroups') || '[]';
-		const groups = JSON.parse(groupsJson) as StudyGroup[];
+		const languagesContainer = document.getElementById('languages-container');
+		const noLanguagesMessage = document.getElementById('no-languages-message');
+		const languagesJson = localStorage.getItem('languages') || '[]';
+		const languages = JSON.parse(languagesJson) as Language[];
 		
-		// Botón de crear grupo
-		const createGroupBtn = document.getElementById('create-group-btn');
-		createGroupBtn?.addEventListener('click', () => {
+		// Botón de crear idioma
+		const createLanguageBtn = document.getElementById('create-language-btn');
+		createLanguageBtn?.addEventListener('click', () => {
 			// @ts-ignore - Ignoramos el error ya que sabemos que la función existe
-			window.openCreateGroupModal();
+			window.openCreateLanguageModal();
 		});
 		
-		if (groups.length > 0 && groupsContainer && noGroupsMessage) {
-			noGroupsMessage.remove();
+		if (languages.length > 0 && languagesContainer && noLanguagesMessage) {
+			noLanguagesMessage.remove();
 			
-			groups.forEach((group: StudyGroup) => {
-				// Obtener tarjetas del grupo
-				const cardsJson = localStorage.getItem(`cards_${group.id}`) || '[]';
-				const cards = JSON.parse(cardsJson) as StudyCard[];
-				const totalCards = cards.length;
-				const learnedCards = cards.filter(card => card.learned).length;
+			languages.forEach((language: Language) => {
+				// Obtener grupos del idioma
+				const groupsJson = localStorage.getItem('studyGroups') || '[]';
+				const allGroups = JSON.parse(groupsJson) as StudyGroup[];
+				const groups = allGroups.filter(group => group.languageId === language.id);
+				
+				// Calcular estadísticas
+				let totalCards = 0;
+				let learnedCards = 0;
+				
+				groups.forEach(group => {
+					const cardsJson = localStorage.getItem(`cards_${group.id}`) || '[]';
+					const cards = JSON.parse(cardsJson) as StudyCard[];
+					totalCards += cards.length;
+					learnedCards += cards.filter(card => card.learned).length;
+				});
+				
 				const progressPercentage = totalCards > 0 ? (learnedCards / totalCards) * 100 : 0;
 				
-				const groupElement = document.createElement('div');
-				groupElement.className = 'bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-100';
+				const languageElement = document.createElement('div');
+				languageElement.className = 'bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-100';
 				
-				groupElement.innerHTML = `
+				languageElement.innerHTML = `
 					<div class="p-5">
 						<div class="flex justify-between items-start mb-3">
-							<h3 class="text-lg font-semibold text-gray-800">${escapeHtml(group.name)}</h3>
+							<h3 class="text-lg font-semibold text-gray-800">${escapeHtml(language.name)}</h3>
 							<div class="dropdown relative">
 								<button class="text-gray-500 hover:text-gray-700 focus:outline-none" aria-label="Opciones">
 									<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -94,31 +111,31 @@ interface StudyCard {
 								<div class="dropdown-menu hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 py-1">
 									<button 
 										data-action="edit"
-										data-group-id="${group.id}" 
-										data-group-name="${escapeHtml(group.name)}"
+										data-language-id="${language.id}" 
+										data-language-name="${escapeHtml(language.name)}"
 										class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
 									>
-										Editar grupo
+										Editar idioma
 									</button>
 									<button 
-										data-action="add-card"
-										data-group-id="${group.id}" 
+										data-action="add-group"
+										data-language-id="${language.id}" 
 										class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
 									>
-										Añadir tarjetas
+										Añadir grupo
 									</button>
 									<button 
 										data-action="delete"
-										data-group-id="${group.id}" 
+										data-language-id="${language.id}" 
 										class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
 									>
-										Eliminar grupo
+										Eliminar idioma
 									</button>
 								</div>
 							</div>
 						</div>
 						
-						<p class="text-gray-500 text-sm mb-3">${totalCards} tarjeta${totalCards !== 1 ? 's' : ''}</p>
+						<p class="text-gray-500 text-sm mb-3">${groups.length} grupo${groups.length !== 1 ? 's' : ''}, ${totalCards} tarjeta${totalCards !== 1 ? 's' : ''}</p>
 						
 						<div class="mb-4">
 							<div class="flex justify-between text-xs mb-1">
@@ -132,14 +149,14 @@ interface StudyCard {
 						
 						<div class="flex space-x-2 mt-4">
 							<a 
-								href="/study/${group.id}"
+								href="/language/${language.id}"
 								class="flex-1 bg-purple-600 hover:bg-purple-700 text-white text-center py-2 px-4 rounded-md transition-colors text-sm font-medium"
 							>
-								Estudiar
+								Ver grupos
 							</a>
 							<button 
-								data-action="add-card"
-								data-group-id="${group.id}" 
+								data-action="add-group"
+								data-language-id="${language.id}" 
 								class="bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-3 rounded-md transition-colors text-sm"
 							>
 								<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -150,11 +167,11 @@ interface StudyCard {
 					</div>
 				`;
 				
-				groupsContainer.appendChild(groupElement);
+				languagesContainer.appendChild(languageElement);
 				
 				// Configurar eventos para el menú desplegable
-				const dropdownButton = groupElement.querySelector('.dropdown button');
-				const dropdownMenu = groupElement.querySelector('.dropdown-menu');
+				const dropdownButton = languageElement.querySelector('.dropdown button');
+				const dropdownMenu = languageElement.querySelector('.dropdown-menu');
 				
 				dropdownButton?.addEventListener('click', (e: Event) => {
 					e.stopPropagation();
@@ -166,27 +183,27 @@ interface StudyCard {
 					dropdownMenu?.classList.add('hidden');
 				});
 				
-				// Configurar acciones para los botones del grupo
-				const actionButtons = groupElement.querySelectorAll('[data-action]');
+				// Configurar acciones para los botones del idioma
+				const actionButtons = languageElement.querySelectorAll('[data-action]');
 				actionButtons.forEach((button) => {
 					button.addEventListener('click', (e: Event) => {
 						e.stopPropagation();
 						const target = e.currentTarget as HTMLElement;
 						const action = target.getAttribute('data-action');
-						const groupId = target.getAttribute('data-group-id');
+						const languageId = target.getAttribute('data-language-id');
 						
-						if (!groupId) return;
+						if (!languageId) return;
 						
 						if (action === 'edit') {
-							const groupName = target.getAttribute('data-group-name') || '';
+							const languageName = target.getAttribute('data-language-name') || '';
 							// @ts-ignore - Ignoramos el error ya que sabemos que la función existe
-							window.openEditGroupModal(groupId, groupName);
-						} else if (action === 'add-card') {
+							window.openEditLanguageModal(languageId, languageName);
+						} else if (action === 'add-group') {
 							// @ts-ignore - Ignoramos el error ya que sabemos que la función existe
-							window.openAddCardModal(groupId);
+							window.openCreateGroupModal(languageId);
 						} else if (action === 'delete') {
 							// @ts-ignore - Ignoramos el error ya que sabemos que la función existe
-							window.openDeleteGroupModal(groupId);
+							window.openDeleteLanguageModal(languageId);
 						}
 						
 						// Cerrar el menú después de la acción
