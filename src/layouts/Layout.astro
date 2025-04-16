@@ -17,37 +17,40 @@ const { title } = Astro.props;
 
 <!DOCTYPE html>
 <html lang="es">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width" />
-        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-        <meta name="generator" content={Astro.generator} />
-        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-        <title>{title}</title>
-    </head>
-    <body>
-        <div class="min-h-screen bg-white">
-            <div class="container mx-auto p-6">
-                <div class="bg-card rounded-xl shadow-lg overflow-hidden mb-8">
-                    <div class="grid grid-cols-12">
-                        <div class="col-span-12 md:col-span-3 lg:col-span-2 bg-dark text-white">
-                            <Sidebar />
-                        </div>
-                        
-                        <div class="col-span-12 md:col-span-9 lg:col-span-10 p-6 bg-light">
-                            <slot />
-                        </div>
-                    </div>
-                </div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>{title}</title>
+  </head>
+  <body>
+    <div class="min-h-screen bg-white">
+      <div class="container mx-auto p-6">
+        <div class="bg-card rounded-xl shadow-lg overflow-hidden mb-8">
+          <div class="grid grid-cols-12">
+            <!-- Sidebar -->
+            <div class="col-span-12 md:col-span-3 lg:col-span-2 bg-dark text-white">
+              <Sidebar />
             </div>
+            
+            <!-- Main Content -->
+            <div class="col-span-12 md:col-span-9 lg:col-span-10 p-6 bg-light">
+              <slot />
+            </div>
+          </div>
         </div>
+      </div>
+    </div>
 
-        <LanguageModals />
-        <GroupModals />
-        <CardModals />
+    <!-- Modales -->
+    <LanguageModals />
+    <GroupModals />
+    <CardModals />
+    <Toast />
 
-        <div id="toast-container" class="fixed bottom-4 right-4 z-50"></div>
-
-        <script src="../scripts/main.js" type="module"></script>
-    </body>
+    <!-- Scripts -->
+    <script src="../scripts/main.ts"></script>
+  </body>
 </html>
